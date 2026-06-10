@@ -67,6 +67,15 @@ sector:
     Link: []
 
 
+# ----- cost data year --------------------------------------------------------
+# PyPSA-Eur keys the cost-data file by `costs.year`, independently of
+# `planning_horizons`. The default is 2050 (transition-pathway use case); pin
+# it to 2025 so fuel prices, CO2 prices, and per-MWh marginal costs match the
+# observed 2025 fleet we are dispatching.
+costs:
+  year: 2025
+
+
 # ----- solver ----------------------------------------------------------------
 # Barrier without crossover is the right default for big continental LPs.
 # Leave ~4 cores for I/O and linopy bookkeeping; Marvin has 24 physical cores
