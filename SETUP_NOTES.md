@@ -34,7 +34,7 @@ cd /projects2/daniel
 mkdir -p pypsa-eur-constraint-ladder && cd pypsa-eur-constraint-ladder
 
 # our repo
-git clone https://github.com/danielcasar/pypsa-eur-constraint-ladder.git paper
+git clone https://github.com/danielcasar/pypsa-eur-constraint-ladder.git ladder
 
 # upstream PyPSA-Eur at the pinned tag
 git clone https://github.com/PyPSA/pypsa-eur.git pypsa-eur
@@ -45,7 +45,7 @@ mamba env create -f pypsa-eur/envs/environment.yaml -n pypsa-eur-ladder
 mamba activate pypsa-eur-ladder
 
 # install our code on top so `from constraints import ...` etc. just works
-pip install -e paper
+pip install -e ladder
 ```
 
 After this, the constraint modules and helpers are importable in any Python

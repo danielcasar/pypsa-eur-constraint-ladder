@@ -6,7 +6,7 @@
 # Server-side usage (from `pypsa-eur/`):
 #
 #   snakemake -j 20 \
-#       --configfile ../configs/eu_2025_dispatch.yaml \
+#       --configfile ../ladder/configs/eu_2025_dispatch.yaml \
 #       -- resources/eu_2025_dispatch/networks/base_s_50_elec_.nc
 #
 # This prepares the network file our manual workflow consumes. After the
