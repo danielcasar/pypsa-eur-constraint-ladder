@@ -2,6 +2,9 @@
 pypsa-eur/
 GENeSYS_MOD.jl/
 
+# --- paper sources stay LOCAL ONLY, never on Git ---
+paper/
+
 # --- literature and raw data (large, not part of source) ---
 Literature/
 results/
@@ -17,20 +20,6 @@ __pycache__/
 venv/
 env/
 .python-version
-
-# --- latex build artefacts (any depth under paper/) ---
-paper/**/*.aux
-paper/**/*.bbl
-paper/**/*.blg
-paper/**/*.fdb_latexmk
-paper/**/*.fls
-paper/**/*.log
-paper/**/*.out
-paper/**/*.synctex.gz
-paper/**/*.toc
-paper/main.pdf
-paper/archive_empirical_shape/main.pdf
-paper/archive_empirical_shape/abstract.pdf
 
 # --- solver / runtime junk ---
 gurobi.log
