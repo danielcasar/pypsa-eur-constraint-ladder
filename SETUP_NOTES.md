@@ -52,6 +52,27 @@ After this, the constraint modules and helpers are importable in any Python
 session under the `pypsa-eur-ladder` env. See `code/driver/example.py` for
 the manual step-by-step walkthrough.
 
+## One-off data fix: extend synthetic load to 2025
+
+PyPSA-Eur v2026.02.0 ships a synthetic-load file that ends at 2023-12-31.
+The `build_electricity_demand` rule requires it to span the full snapshot
+window even when real ENTSO-E / OPSD covers the year, so any snapshot range
+that exceeds 2023 fails with a `KeyError`. Extend it once with the
+shape-shifted profiles from 2020 (-> 2024 leap) and 2023 (-> 2025 non-leap):
+
+```bash
+cd ~/projects2/daniel/pypsa-eur-constraint-ladder/pypsa-eur
+python ../ladder/tools/extend_synthetic_load.py
+```
+
+Run from inside `pypsa-eur/` after the first Snakemake invocation has
+retrieved the upstream data files (it operates on the downloaded
+`data/synthetic_electricity_demand/...` CSV). Idempotent: a second run is
+a no-op if 2024-25 rows are already present. The extension is shape-only
+(re-dated copies of recent years' profiles) and only affects countries
+where real ENTSO-E / OPSD data is absent for 2025 -- i.e., the small
+markets (BA, ME, XK, MD, UA). Documented as a limitation in the paper.
+
 ## Continental 2025 prepared network
 
 Run from inside `pypsa-eur/`:
