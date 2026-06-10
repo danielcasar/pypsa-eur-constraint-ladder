@@ -41,7 +41,7 @@ git clone https://github.com/PyPSA/pypsa-eur.git pypsa-eur
 cd pypsa-eur && git checkout v2026.02.0 && cd ..
 
 # environment from the pinned PyPSA-Eur's environment.yaml
-mamba env create -f pypsa-eur/workflow/envs/environment.yaml -n pypsa-eur-ladder
+mamba env create -f pypsa-eur/envs/environment.yaml -n pypsa-eur-ladder
 mamba activate pypsa-eur-ladder
 
 # install our code on top so `from constraints import ...` etc. just works
