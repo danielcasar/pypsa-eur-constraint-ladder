@@ -3,29 +3,24 @@
 Run this from a Python session (or step through it in a notebook). Each
 section solves one configuration and dumps shadow prices + objective to
 ``RESULTS_DIR / <config_name>/``. Skip or reorder as you like.
+
+Prerequisite: ``pip install -e .`` from the repo root so that
+``constraints`` and ``driver`` are importable as top-level names.
 """
 
 from __future__ import annotations
 
-import sys
 from pathlib import Path
 
 import pypsa
 
-# Make the sibling packages importable as top-level names without
-# turning ``code/`` itself into a Python package (which would shadow the
-# stdlib ``code`` module).
-_CODE_DIR = Path(__file__).resolve().parent.parent
-if str(_CODE_DIR) not in sys.path:
-    sys.path.insert(0, str(_CODE_DIR))
-
-from constraints import (  # noqa: E402
+from constraints import (
     DE_BID_BEHAVIOUR_2025,
     apply_de_must_take,
     apply_de_subsidy_floor,
     apply_price_elastic_demand,
 )
-from driver import (  # noqa: E402
+from driver import (
     add_operational_reserve_margin,
     apply_voll_load_shedding,
     build_calibration,
