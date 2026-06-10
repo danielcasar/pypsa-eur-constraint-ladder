@@ -1,0 +1,54 @@
+# --- upstream / vendored repos ---
+pypsa-eur/
+GENeSYS_MOD.jl/
+
+# --- literature and raw data (large, not part of source) ---
+Literature/
+results/
+Analysis/data/
+Analysis/results/
+
+# --- python build artefacts ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.venv/
+venv/
+env/
+.python-version
+
+# --- latex build artefacts (any depth under paper/) ---
+paper/**/*.aux
+paper/**/*.bbl
+paper/**/*.blg
+paper/**/*.fdb_latexmk
+paper/**/*.fls
+paper/**/*.log
+paper/**/*.out
+paper/**/*.synctex.gz
+paper/**/*.toc
+paper/main.pdf
+paper/archive_empirical_shape/main.pdf
+paper/archive_empirical_shape/abstract.pdf
+
+# --- solver / runtime junk ---
+gurobi.log
+*.lp
+*.mps
+*.sol
+
+# --- IDE / OS ---
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# --- personal / non-source ---
+WhatsApp Image*.jpeg
+WhatsApp Image*.jpg
+*.tmp
+
+# --- Claude Code settings (local, project-scoped) ---
+.claude/
