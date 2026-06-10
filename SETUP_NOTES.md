@@ -51,3 +51,20 @@ pip install -e paper
 After this, the constraint modules and helpers are importable in any Python
 session under the `pypsa-eur-ladder` env. See `code/driver/example.py` for
 the manual step-by-step walkthrough.
+
+## Continental 2025 prepared network
+
+Run from inside `pypsa-eur/`:
+
+```bash
+snakemake -j 20 \
+    --configfile ../configs/eu_2025_dispatch.yaml \
+    -- resources/eu_2025_dispatch/networks/base_s_50_elec_.nc
+```
+
+The override config at `configs/eu_2025_dispatch.yaml` keeps every
+upstream default except: run name (`eu_2025_dispatch`), 50 clusters,
+2025 calendar, dispatch-only (empty `extendable_carriers` on both
+`electricity` and `sector`), and Gurobi barrier as the LP method. The
+resulting `.nc` is what the manual workflow in `code/driver/example.py`
+loads (update `NETWORK_PATH` accordingly).

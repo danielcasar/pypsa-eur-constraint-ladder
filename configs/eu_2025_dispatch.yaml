@@ -1,0 +1,102 @@
+# =============================================================================
+# PyPSA-Eur override for the continental 2025 dispatch-only constraint-ladder
+# paper. Only keys that differ from `pypsa-eur/config/config.default.yaml` are
+# listed; everything else inherits the default.
+#
+# Server-side usage (from `pypsa-eur/`):
+#
+#   snakemake -j 20 \
+#       --configfile ../configs/eu_2025_dispatch.yaml \
+#       -- resources/eu_2025_dispatch/networks/base_s_50_elec_.nc
+#
+# This prepares the network file our manual workflow consumes. After the
+# preparation, hand the .nc off to `code/driver/example.py` (or your own
+# interactive session) to apply the constraint ladder step by step.
+# =============================================================================
+
+# ----- run identifier --------------------------------------------------------
+# A distinct run name keeps the prepared network + resources isolated from any
+# default/test runs that may also exist under the same PyPSA-Eur clone.
+run:
+  name: "eu_2025_dispatch"
+  shared_resources:
+    policy: false
+
+
+# ----- planning horizon ------------------------------------------------------
+# Single-period overnight optimisation. `planning_horizons: [2025]` does not
+# trigger capacity expansion because `electricity.extendable_carriers` (below)
+# is empty; it only sets the year label PyPSA-Eur uses for cost / fuel-price
+# lookups.
+foresight: overnight
+scenario:
+  clusters:
+    - 50          # ~50 zone continental discretisation
+  opts:
+    - ''
+  sector_opts:
+    - ''
+  planning_horizons:
+    - 2025
+
+
+# ----- calendar (full year 2025, hourly) -------------------------------------
+snapshots:
+  start: "2025-01-01"
+  end: "2026-01-01"
+  inclusive: "left"
+
+
+# ----- dispatch-only: no extendable capacities -------------------------------
+# Both `electricity` and `sector` carrier lists empty so neither the power-
+# system extension variables nor the cross-sector extension variables enter
+# the LP. The model only chooses dispatch / flows / storage operation on the
+# 2025-pinned fleet.
+electricity:
+  extendable_carriers:
+    Generator: []
+    StorageUnit: []
+    Store: []
+    Link: []
+
+sector:
+  extendable_carriers:
+    Generator: []
+    StorageUnit: []
+    Store: []
+    Link: []
+
+
+# ----- solver ----------------------------------------------------------------
+# Barrier without crossover is the right default for big continental LPs.
+# Leave ~4 cores for I/O and linopy bookkeeping; Marvin has 24 physical cores
+# so threads=20 is the safe ceiling.
+solving:
+  solver:
+    name: gurobi
+    options: gurobi-default
+
+  solver_options:
+    gurobi-default:
+      threads: 20
+      method: 2              # barrier
+      crossover: 0           # skip crossover; barrier point is enough for duals
+      BarConvTol: 1.e-6
+      FeasibilityTol: 1.e-5
+      OptimalityTol: 1.e-5
+      Seed: 123
+
+
+# =============================================================================
+# Known follow-ups for the paper's reproducibility (not blocking the first
+# continental run on 2013 weather, but tracked here so we don't forget):
+#
+#   * Weather year: the default `europe-2013-era5` cutout is used here. For
+#     the paper we want a 2025 ERA5 cutout, which requires (a) a Copernicus
+#     CDS API key and (b) running PyPSA-Eur's `build_cutout` rule, ~30 GB
+#     download per year. Swap that in once the workflow on 2013 weather is
+#     verified.
+#   * Fleet pinning: PyPSA-Eur's `electricity.estimate_renewable_capacities`
+#     defaults aim at the latest available IRENA/OPSD year; verify it picks
+#     up 2025 (or the most recent available) and not an older default.
+# =============================================================================
