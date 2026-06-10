@@ -22,7 +22,7 @@ dependencies = [
 
 [tool.setuptools.packages.find]
 where = ["code"]
-include = ["constraints*", "driver*", "analysis*"]
+include = ["constraints*", "driver*"]
 
 [tool.setuptools.package-data]
 "*" = ["py.typed"]
