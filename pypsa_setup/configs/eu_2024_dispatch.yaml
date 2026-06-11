@@ -86,6 +86,21 @@ electricity:
     StorageUnit: []
     Store: []
     Link: []
+  # PyPSA-Eur's default is from_powerplantmatching=True, which lags
+  # actual deployment because it relies on unit-level commissioning
+  # data (OPSD/GEM/JRC) -- many 2024 solar additions in DE/IT/NL/BE/PL
+  # are missing. Switch to IRENA's country-aggregate statistics which
+  # are published annually and currently include 2024 numbers.
+  estimate_renewable_capacities:
+    enable: true
+    from_powerplantmatching: false
+    from_irenastat: true
+    year: 2024
+    expansion_limit: false
+    technology_mapping:
+      Offshore: offwind-ac
+      Onshore: onwind
+      PV: solar
 
 sector:
   extendable_carriers:

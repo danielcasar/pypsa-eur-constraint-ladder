@@ -75,6 +75,10 @@ electricity:
     StorageUnit: []
     Store: []
     Link: []
+  estimate_renewable_capacities:
+    from_powerplantmatching: false
+    from_irenastat: true
+    year: 2024
 
 sector:
   extendable_carriers:
@@ -86,6 +90,15 @@ sector:
 All extendable carrier lists empty, so neither the electricity LP nor
 the sector LP introduces capacity-expansion variables. The model is
 pure dispatch on the 2024-pinned fleet.
+
+The renewable-capacity source is switched from
+`from_powerplantmatching` (default; unit-level OPSD/GEM/JRC data that
+lags actual deployment) to `from_irenastat` (IRENA country-aggregate
+statistics, currently with 2024 totals). The default left
+Germany/Italy/Netherlands/Belgium solar 50-90% under-counted because
+those countries' rapid 2024 solar additions had not yet propagated
+through the unit-level data sources at PyPSA-Eur v2026.02.0 tag time.
+IRENA's aggregate numbers reflect the actual installed base.
 
 ### 1.5 Weather cutout
 ```yaml
