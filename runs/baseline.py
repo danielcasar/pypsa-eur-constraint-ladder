@@ -24,7 +24,7 @@ import pypsa
 from constraint_ladder.helpers import reset_to_lp_baseline
 
 
-NETWORK_PATH = Path("pypsa-eur/resources/eu_2024_dispatch/networks/base_s_50_elec_.nc")
+NETWORK_PATH = Path("pypsa-eur/resources/eu_2024_dispatch/networks/base_s_adm_elec_.nc")
 RESULTS_DIR = Path("results/baseline")
 SOLVER_OPTIONS = {
     "Method": 2,        # barrier

@@ -37,7 +37,12 @@ run:
 foresight: overnight
 scenario:
   clusters:
-    - 50          # ~50 zone continental discretisation
+    # 'adm' = administrative clustering driven by the bidding-zone shape
+    # file (see clustering.mode below). One cluster per real bidding zone
+    # (IT-NORD/CSUD/SUD/SARD/SICI/CNORD, SE1-4, NO1-4 with NO5 merged into
+    # NO2 per build_bidding_zones.py, DK1/DK2, etc.). Replaces the prior
+    # numeric kmeans cluster count.
+    - adm
   opts:
     - ''
   sector_opts:
@@ -49,6 +54,17 @@ scenario:
     # wildcard. We use it as a forward-looking proxy for 2024 fuel + CO2
     # prices (actual 2024 levels are close to the 2025 assumption).
     - 2025
+
+
+# ----- bidding-zone-aware clustering -----------------------------------------
+# Use PyPSA-Eur's built-in bidding-zone shapes (build_bidding_zones.py output
+# at resources/bidding_zones.geojson) as the cluster source. Each cluster is
+# one real bidding zone, so per-zone shadow prices align with the per-zone
+# ENTSO-E day-ahead reference used for validation.
+clustering:
+  mode: administrative
+  administrative:
+    level: bz
 
 
 # ----- calendar (full year 2024, hourly) -------------------------------------

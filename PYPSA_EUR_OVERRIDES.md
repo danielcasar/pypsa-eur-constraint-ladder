@@ -33,16 +33,25 @@ clone is unaffected.
 ```yaml
 foresight: overnight
 scenario:
-  clusters: [50]
+  clusters: [adm]
   opts: ['']
   sector_opts: ['']
   planning_horizons: [2025]
+clustering:
+  mode: administrative
+  administrative:
+    level: bz
 ```
-Single-period overnight optimisation. 50 zones is the continental
-discretisation target. `planning_horizons: [2025]` is decoupled from the
-snapshot calendar (which is 2024); it drives the cost-data file
-retrieval (`costs_2025.csv`) because PyPSA-Eur publishes cost CSVs only
-at quinquennial horizons.
+Single-period overnight optimisation. The `clusters: [adm]` wildcard
+together with `clustering.mode: administrative` + `level: bz` drives
+PyPSA-Eur's bidding-zone-aware clustering: one cluster per real ENTSO-E
+bidding zone (Italy gets NORD/CSUD/SUD/SARD/SICI/CNORD; Sweden
+SE1-SE4; Denmark DK1/DK2; etc.). Bus shapes come from
+`build_bidding_zones.py` which fuses electricitymaps-contrib and
+entsoe-py shape sources and adjusts to TYNDP 2024. `planning_horizons:
+[2025]` is decoupled from the snapshot calendar (which is 2024); it
+drives the cost-data file retrieval (`costs_2025.csv`) because
+PyPSA-Eur publishes cost CSVs only at quinquennial horizons.
 
 ### 1.3 Calendar
 ```yaml

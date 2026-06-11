@@ -83,13 +83,15 @@ Run from inside `pypsa-eur/`:
 ```bash
 snakemake -j 20 \
     --configfile ../ladder/pypsa_setup/configs/eu_2024_dispatch.yaml \
-    -- resources/eu_2024_dispatch/networks/base_s_50_elec_.nc
+    -- resources/eu_2024_dispatch/networks/base_s_adm_elec_.nc
 ```
 
 The override config at `pypsa_setup/configs/eu_2024_dispatch.yaml`
 keeps every upstream default except: run name (`eu_2024_dispatch`),
-50 clusters, 2024 calendar, dispatch-only (empty `extendable_carriers`
-on both `electricity` and `sector`), 2024 weather cutout, 2024-actual
-fuel + CO2 cost overrides, and Gurobi barrier as the LP method. The
-resulting `.nc` is consumed by `runs/baseline.py` (and the per-step
-ladder scripts that will live next to it).
+bidding-zone-aware clustering (`clustering.mode: administrative`,
+level `bz`, scenario `clusters: [adm]`), 2024 calendar, dispatch-only
+(empty `extendable_carriers` on both `electricity` and `sector`),
+2024 weather cutout, 2024-actual fuel + CO2 cost overrides, and
+Gurobi barrier as the LP method. The resulting `.nc` is consumed by
+`runs/baseline.py` (and the per-step ladder scripts that will live
+next to it).
