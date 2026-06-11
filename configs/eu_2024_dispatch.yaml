@@ -1,13 +1,19 @@
 # =============================================================================
-# PyPSA-Eur override for the continental 2025 dispatch-only constraint-ladder
+# PyPSA-Eur override for the continental 2024 dispatch-only constraint-ladder
 # paper. Only keys that differ from `pypsa-eur/config/config.default.yaml` are
 # listed; everything else inherits the default.
+#
+# Calibration year is 2024, not 2025: PyPSA-Eur v2026.02.0 bundled several
+# year-keyed data files (synthetic load, nuclear p_max_pu, ...) that stop at
+# 2024. Hand-patching every gap to reach 2025 was incrementally fragile; 2024
+# keeps every input on its natively-supported axis. The market regime
+# (post-gas-crisis "new normal") is the same either way.
 #
 # Server-side usage (from `pypsa-eur/`):
 #
 #   snakemake -j 20 \
-#       --configfile ../ladder/configs/eu_2025_dispatch.yaml \
-#       -- resources/eu_2025_dispatch/networks/base_s_50_elec_.nc
+#       --configfile ../ladder/configs/eu_2024_dispatch.yaml \
+#       -- resources/eu_2024_dispatch/networks/base_s_50_elec_.nc
 #
 # This prepares the network file our manual workflow consumes. After the
 # preparation, hand the .nc off to `code/driver/example.py` (or your own
@@ -18,13 +24,13 @@
 # A distinct run name keeps the prepared network + resources isolated from any
 # default/test runs that may also exist under the same PyPSA-Eur clone.
 run:
-  name: "eu_2025_dispatch"
+  name: "eu_2024_dispatch"
   shared_resources:
     policy: false
 
 
 # ----- planning horizon ------------------------------------------------------
-# Single-period overnight optimisation. `planning_horizons: [2025]` does not
+# Single-period overnight optimisation. `planning_horizons: [2024]` does not
 # trigger capacity expansion because `electricity.extendable_carriers` (below)
 # is empty; it only sets the year label PyPSA-Eur uses for cost / fuel-price
 # lookups.
@@ -37,13 +43,14 @@ scenario:
   sector_opts:
     - ''
   planning_horizons:
-    - 2025
+    - 2024
 
 
-# ----- calendar (full year 2025, hourly) -------------------------------------
+# ----- calendar (full year 2024, hourly) -------------------------------------
+# 2024 is a leap year -- 8784 hourly snapshots.
 snapshots:
-  start: "2025-01-01"
-  end: "2026-01-01"
+  start: "2024-01-01"
+  end: "2025-01-01"
   inclusive: "left"
 
 
@@ -51,7 +58,7 @@ snapshots:
 # Both `electricity` and `sector` carrier lists empty so neither the power-
 # system extension variables nor the cross-sector extension variables enter
 # the LP. The model only chooses dispatch / flows / storage operation on the
-# 2025-pinned fleet.
+# 2024-pinned fleet.
 electricity:
   extendable_carriers:
     Generator: []
@@ -68,25 +75,19 @@ sector:
 
 
 # ----- weather year (cutout) -------------------------------------------------
-# PyPSA-Eur ships defaulting to the precomputed `europe-2013-sarah3-era5`
-# cutout for all renewable + hydro profiles. We replace it with the
-# `europe-2025-sarah3-era5` cutout (also published at data.pypsa.org), so
-# wind / solar / runoff are computed against 2025 meteorology -- aligned
-# with the snapshot calendar and the 2025-pinned fleet / load.
-#
-# This is a name-level swap; no `atlite.cutouts` build recipe needs to be
-# added because the file is fetched as-is via the `retrieve_cutout` rule.
+# Replace the bundled default `europe-2013-sarah3-era5` cutout with the
+# `europe-2024-sarah3-era5` cutout (pre-published at data.pypsa.org). All
+# renewable + hydro profiles are then computed on 2024 meteorology, aligned
+# with the snapshot calendar and the 2024-pinned fleet / load.
 atlite:
-  default_cutout: "europe-2025-sarah3-era5"
+  default_cutout: "europe-2024-sarah3-era5"
 
 
 # ----- cost data year --------------------------------------------------------
-# PyPSA-Eur keys the cost-data file by `costs.year`, independently of
-# `planning_horizons`. The default is 2050 (transition-pathway use case); pin
-# it to 2025 so fuel prices, CO2 prices, and per-MWh marginal costs match the
-# observed 2025 fleet we are dispatching.
+# Match `costs.year` to the calibration calendar so fuel prices, CO2 prices,
+# and per-MWh marginal costs come from 2024 assumptions.
 costs:
-  year: 2025
+  year: 2024
 
 
 # ----- solver ----------------------------------------------------------------
@@ -107,18 +108,3 @@ solving:
       FeasibilityTol: 1.e-5
       OptimalityTol: 1.e-5
       Seed: 123
-
-
-# =============================================================================
-# Known follow-ups for the paper's reproducibility (not blocking the first
-# continental run on 2013 weather, but tracked here so we don't forget):
-#
-#   * Weather year: the default `europe-2013-era5` cutout is used here. For
-#     the paper we want a 2025 ERA5 cutout, which requires (a) a Copernicus
-#     CDS API key and (b) running PyPSA-Eur's `build_cutout` rule, ~30 GB
-#     download per year. Swap that in once the workflow on 2013 weather is
-#     verified.
-#   * Fleet pinning: PyPSA-Eur's `electricity.estimate_renewable_capacities`
-#     defaults aim at the latest available IRENA/OPSD year; verify it picks
-#     up 2025 (or the most recent available) and not an older default.
-# =============================================================================

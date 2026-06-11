@@ -14,7 +14,7 @@
 We do **not** vendor PyPSA-Eur. Coupling is at two layers:
 
 1. **File-level.** PyPSA-Eur's Snakemake workflow produces a prepared network
-   (`.nc` file) that encodes the 2025 fleet, load, NTC, and carrier set for
+   (`.nc` file) that encodes the 2024 fleet, load, NTC, and carrier set for
    the target zones. Our `code/driver/example.py` loads that file as input
    and applies the constraint-activation helpers on top.
 2. **Library-level.** Both PyPSA-Eur and our code `import pypsa` directly.
@@ -52,13 +52,15 @@ After this, the constraint modules and helpers are importable in any Python
 session under the `pypsa-eur-ladder` env. See `code/driver/example.py` for
 the manual step-by-step walkthrough.
 
-## One-off data fix: extend synthetic load to 2025
+## One-off data fix: extend synthetic load to 2024
 
 PyPSA-Eur v2026.02.0 ships a synthetic-load file that ends at 2023-12-31.
 The `build_electricity_demand` rule requires it to span the full snapshot
 window even when real ENTSO-E / OPSD covers the year, so any snapshot range
-that exceeds 2023 fails with a `KeyError`. Extend it once with the
-shape-shifted profiles from 2020 (-> 2024 leap) and 2023 (-> 2025 non-leap):
+that exceeds 2023 fails with a `KeyError`. Extend it once with a
+shape-shifted copy of 2020 -> 2024 (both leap years, so the date index maps
+one-to-one). The script also appends 2023 -> 2025 as a forward-looking
+extra; for the current 2024-calibrated paper only the 2024 column is read.
 
 ```bash
 cd ~/projects2/daniel/pypsa-eur-constraint-ladder/pypsa-eur
@@ -68,24 +70,24 @@ python ../ladder/tools/extend_synthetic_load.py
 Run from inside `pypsa-eur/` after the first Snakemake invocation has
 retrieved the upstream data files (it operates on the downloaded
 `data/synthetic_electricity_demand/...` CSV). Idempotent: a second run is
-a no-op if 2024-25 rows are already present. The extension is shape-only
-(re-dated copies of recent years' profiles) and only affects countries
-where real ENTSO-E / OPSD data is absent for 2025 -- i.e., the small
+a no-op if 2024 rows are already present. The extension is shape-only
+(re-dated copy of an earlier year's profile) and only affects countries
+where real ENTSO-E / OPSD data is absent for 2024 -- i.e., the small
 markets (BA, ME, XK, MD, UA). Documented as a limitation in the paper.
 
-## Continental 2025 prepared network
+## Continental 2024 prepared network
 
 Run from inside `pypsa-eur/`:
 
 ```bash
 snakemake -j 20 \
-    --configfile ../configs/eu_2025_dispatch.yaml \
-    -- resources/eu_2025_dispatch/networks/base_s_50_elec_.nc
+    --configfile ../ladder/configs/eu_2024_dispatch.yaml \
+    -- resources/eu_2024_dispatch/networks/base_s_50_elec_.nc
 ```
 
-The override config at `configs/eu_2025_dispatch.yaml` keeps every
-upstream default except: run name (`eu_2025_dispatch`), 50 clusters,
-2025 calendar, dispatch-only (empty `extendable_carriers` on both
+The override config at `configs/eu_2024_dispatch.yaml` keeps every
+upstream default except: run name (`eu_2024_dispatch`), 50 clusters,
+2024 calendar, dispatch-only (empty `extendable_carriers` on both
 `electricity` and `sector`), and Gurobi barrier as the LP method. The
 resulting `.nc` is what the manual workflow in `code/driver/example.py`
 loads (update `NETWORK_PATH` accordingly).
