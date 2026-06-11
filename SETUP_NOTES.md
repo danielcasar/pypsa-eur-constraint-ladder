@@ -44,13 +44,14 @@ cd pypsa-eur && git checkout v2026.02.0 && cd ..
 mamba env create -f pypsa-eur/envs/environment.yaml -n pypsa-eur-ladder
 mamba activate pypsa-eur-ladder
 
-# install our code on top so `from constraints import ...` etc. just works
+# install our code on top so `from constraint_ladder ...` just works
 pip install -e ladder
 ```
 
 After this, the constraint modules and helpers are importable in any Python
-session under the `pypsa-eur-ladder` env. See `code/driver/example.py` for
-the manual step-by-step walkthrough.
+session under the `pypsa-eur-ladder` env (`from constraint_ladder.helpers
+import reset_to_lp_baseline`, etc.). See `runs/baseline.py` for a working
+self-contained example.
 
 ## One-off data fix: extend synthetic load to 2024
 
@@ -64,7 +65,7 @@ extra; for the current 2024-calibrated paper only the 2024 column is read.
 
 ```bash
 cd ~/projects2/daniel/pypsa-eur-constraint-ladder/pypsa-eur
-python ../ladder/tools/extend_synthetic_load.py
+python ../ladder/pypsa_setup/data_patches/extend_synthetic_load.py
 ```
 
 Run from inside `pypsa-eur/` after the first Snakemake invocation has
@@ -81,13 +82,14 @@ Run from inside `pypsa-eur/`:
 
 ```bash
 snakemake -j 20 \
-    --configfile ../ladder/configs/eu_2024_dispatch.yaml \
+    --configfile ../ladder/pypsa_setup/configs/eu_2024_dispatch.yaml \
     -- resources/eu_2024_dispatch/networks/base_s_50_elec_.nc
 ```
 
-The override config at `configs/eu_2024_dispatch.yaml` keeps every
-upstream default except: run name (`eu_2024_dispatch`), 50 clusters,
-2024 calendar, dispatch-only (empty `extendable_carriers` on both
-`electricity` and `sector`), and Gurobi barrier as the LP method. The
-resulting `.nc` is what the manual workflow in `code/driver/example.py`
-loads (update `NETWORK_PATH` accordingly).
+The override config at `pypsa_setup/configs/eu_2024_dispatch.yaml`
+keeps every upstream default except: run name (`eu_2024_dispatch`),
+50 clusters, 2024 calendar, dispatch-only (empty `extendable_carriers`
+on both `electricity` and `sector`), 2024 weather cutout, 2024-actual
+fuel + CO2 cost overrides, and Gurobi barrier as the LP method. The
+resulting `.nc` is consumed by `runs/baseline.py` (and the per-step
+ladder scripts that will live next to it).

@@ -3,8 +3,8 @@ PyPSA-Eur network.
 
 Use these helpers in an interactive Python session or notebook to apply
 one constraint at a time and inspect the resulting shadow prices before
-deciding whether to activate the next one. See ``example.py`` for a
-copy-paste-ready walkthrough.
+deciding whether to activate the next one. See ``runs/baseline.py``
+in the repo root for a self-contained example.
 """
 
 from .calibration import build_calibration

@@ -21,8 +21,7 @@ dependencies = [
 ]
 
 [tool.setuptools.packages.find]
-where = ["code"]
-include = ["constraints*", "driver*"]
+include = ["constraint_ladder*"]
 
 [tool.setuptools.package-data]
 "*" = ["py.typed"]

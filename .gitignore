@@ -3,10 +3,10 @@ pypsa-eur/
 GENeSYS_MOD.jl/
 
 # --- paper sources, analysis, and planning stay LOCAL ONLY ---
-# Only model-run code (code/constraints + code/driver) belongs on GitHub.
+# Only model-run code (constraint_ladder/, pypsa_setup/, runs/) belongs on GitHub.
 paper/
 Analysis/
-code/analysis/
+code/
 TASKS.md
 
 # --- literature and raw data (large, not part of source) ---

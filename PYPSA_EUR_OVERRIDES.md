@@ -15,7 +15,7 @@ script in `tools/`. The upstream clone at `pypsa-eur/` is kept on the
 
 ## 1. Configuration overrides
 
-All overrides live in `configs/eu_2024_dispatch.yaml`. Snakemake reads
+All overrides live in `pypsa_setup/configs/eu_2024_dispatch.yaml`. Snakemake reads
 this file on top of `pypsa-eur/config/config.default.yaml` so only the
 listed keys deviate from upstream.
 
@@ -156,7 +156,7 @@ leaves ~4 for linopy / I/O).
 ## 2. Data extensions (one-off scripts in `tools/`)
 
 ### 2.1 Synthetic load extension
-**Script**: `tools/extend_synthetic_load.py`.
+**Script**: `pypsa_setup/data_patches/extend_synthetic_load.py`.
 **Touches**: `pypsa-eur/data/synthetic_electricity_demand/primary/v2/load_synthetic_raw.csv`.
 **Operation**: Appends shape-shifted copies of the upstream synthetic
 profile to extend coverage from native end-of-2023 to end-of-2025:
@@ -201,9 +201,9 @@ cd pypsa-eur && git checkout v2026.02.0
 Our deviations on top are reproduced by:
 1. Cloning this repo alongside (`git clone <this-repo> ladder`).
 2. Running the one-off data extension once
-   (`python ../ladder/tools/extend_synthetic_load.py`).
+   (`python ../ladder/pypsa_setup/data_patches/extend_synthetic_load.py`).
 3. Pointing Snakemake at the override config
-   (`--configfile ../ladder/configs/eu_2024_dispatch.yaml`).
+   (`--configfile ../ladder/pypsa_setup/configs/eu_2024_dispatch.yaml`).
 
 No edits are made inside `pypsa-eur/` itself; the clone stays on the
 pinned tag throughout.
