@@ -8,6 +8,7 @@ in the repo root for a self-contained example.
 """
 
 from .calibration import build_calibration
+from .metrics import record_solve_metrics
 from .native_constraints import (
     DEFAULT_THERMAL_CARRIERS,
     add_operational_reserve_margin,
@@ -23,6 +24,7 @@ __all__ = [
     "apply_voll_load_shedding",
     "build_calibration",
     "enable_unit_commitment",
+    "record_solve_metrics",
     "reset_to_lp_baseline",
     "restore_ramping",
 ]
