@@ -88,12 +88,36 @@ atlite:
   default_cutout: "europe-2024-sarah3-era5"
 
 
-# ----- cost data year --------------------------------------------------------
+# ----- cost data year + 2024-actual overrides --------------------------------
 # PyPSA-Eur publishes cost CSVs only at quinquennial horizons; 2025 is the
-# nearest published file. Used as a forward-looking proxy for 2024 fuel +
-# CO2 prices (2024 actual is close to the 2025 assumption).
+# nearest published file. We start from that and override the
+# year-volatile entries (fuel + CO2 prices) with observed 2024 averages so
+# marginal costs are calibrated to the actual 2024 dispatch regime.
+#
+# Sources of the override values are documented in PYPSA_EUR_OVERRIDES.md.
+#
+#   * gas      32  -- TTF day-ahead 2024 average, EUR/MWh thermal
+#   * coal     11  -- CIF NW-Europe API2 2024 average, EUR/MWh thermal
+#   * lignite   4  -- mine-mouth, stable
+#   * oil      50  -- Brent equivalent 2024 average
+#   * uranium 1.7  -- nuclear fuel cycle, stable
+#   * biomass  25  -- NorthWest Europe wholesale 2024
+#   * co2      65  -- EUA front-year contract 2024 average, EUR/tCO2
+#
+# OCGT and CCGT fuel cost inherits from `gas` (process_cost_data.py L178-179).
 costs:
   year: 2025
+  overwrites:
+    fuel:
+      gas: 32
+      coal: 11
+      lignite: 4
+      oil: 50
+      uranium: 1.7
+      biomass: 25
+  emission_prices:
+    enable: true
+    co2: 65
 
 
 # ----- solver ----------------------------------------------------------------
