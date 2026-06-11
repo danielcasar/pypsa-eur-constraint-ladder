@@ -43,7 +43,12 @@ scenario:
   sector_opts:
     - ''
   planning_horizons:
-    - 2024
+    # PyPSA-Eur publishes cost files only at quinquennial horizons
+    # (2020, 2025, 2030, ..., 2050). 2025 is the nearest published horizon
+    # and is the cost-data file the retrieve_cost_data rule fetches via the
+    # wildcard. We use it as a forward-looking proxy for 2024 fuel + CO2
+    # prices (actual 2024 levels are close to the 2025 assumption).
+    - 2025
 
 
 # ----- calendar (full year 2024, hourly) -------------------------------------
@@ -84,10 +89,11 @@ atlite:
 
 
 # ----- cost data year --------------------------------------------------------
-# Match `costs.year` to the calibration calendar so fuel prices, CO2 prices,
-# and per-MWh marginal costs come from 2024 assumptions.
+# PyPSA-Eur publishes cost CSVs only at quinquennial horizons; 2025 is the
+# nearest published file. Used as a forward-looking proxy for 2024 fuel +
+# CO2 prices (2024 actual is close to the 2025 assumption).
 costs:
-  year: 2024
+  year: 2025
 
 
 # ----- solver ----------------------------------------------------------------
