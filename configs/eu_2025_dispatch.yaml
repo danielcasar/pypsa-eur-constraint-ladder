@@ -67,6 +67,19 @@ sector:
     Link: []
 
 
+# ----- weather year (cutout) -------------------------------------------------
+# PyPSA-Eur ships defaulting to the precomputed `europe-2013-sarah3-era5`
+# cutout for all renewable + hydro profiles. We replace it with the
+# `europe-2025-sarah3-era5` cutout (also published at data.pypsa.org), so
+# wind / solar / runoff are computed against 2025 meteorology -- aligned
+# with the snapshot calendar and the 2025-pinned fleet / load.
+#
+# This is a name-level swap; no `atlite.cutouts` build recipe needs to be
+# added because the file is fetched as-is via the `retrieve_cutout` rule.
+atlite:
+  default_cutout: "europe-2025-sarah3-era5"
+
+
 # ----- cost data year --------------------------------------------------------
 # PyPSA-Eur keys the cost-data file by `costs.year`, independently of
 # `planning_horizons`. The default is 2050 (transition-pathway use case); pin
