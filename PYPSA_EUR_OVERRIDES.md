@@ -133,15 +133,19 @@ costs:
   year: 2025
   overwrites:
     fuel:
-      gas: 32
-      coal: 11
+      gas: 34
+      coal: 14
       lignite: 4
-      oil: 50
-      uranium: 1.7
+      oil: 45
+      nuclear: 2.6
+      uranium: 2.6
       biomass: 25
+    efficiency:
+      coal: 0.40
+      lignite: 0.42
   emission_prices:
     enable: true
-    co2: 65
+    co2: 65.0   # float literal required -- see warning below
 ```
 
 **Base file: `costs_2025.csv`.** PyPSA-Eur publishes cost CSVs only at
@@ -156,10 +160,10 @@ output `resources/eu_2024_dispatch/costs_2025_processed.csv` on 2026-06-12):
 
 | Carrier | Upstream | Upstream basis (money year) | Override | 2024-observed basis | Sources to double-check |
 |---|---|---|---|---|---|
-| gas | 42.90 | World Bank Commodity Markets + TYNDP 2024 scenario inputs (2020 EUR) | **32** | TTF day-ahead 2024 calendar avg ≈ €34 (Q1 ~27, Q4 ~45) | ICE Endex TTF; EEX spot indices; ACER wholesale market reports |
-| coal | 7.82 | TYNDP 2024 scenario inputs, IEA 2022 APS (2021 EUR) | **11** | API2 CIF ARA 2024 avg ≈ $105–115/t → ≈ €13–15/MWh_th at 6.98 MWh/t, 0.92 EUR/USD | Argus/McCloskey API2; EEX coal futures; Trading Economics |
+| gas | 42.90 | World Bank Commodity Markets + TYNDP 2024 scenario inputs (2020 EUR) | **34** | TTF day-ahead 2024 calendar avg ≈ €34 (Q1 ~27, Q4 ~45) | ICE Endex TTF; EEX spot indices; ACER wholesale market reports |
+| coal | 7.82 | TYNDP 2024 scenario inputs, IEA 2022 APS (2021 EUR) | **14** | API2 CIF ARA 2024 avg ≈ $105–115/t → ≈ €13–15/MWh_th at 6.98 MWh/t, 0.92 EUR/USD | Argus/McCloskey API2; EEX coal futures; Trading Economics |
 | lignite | 7.94 | TYNDP 2024, Booz&co Lignite G2 (2021 EUR) | **4** | Mine-mouth convention, €3–5 typical | EURACOAL Coal in Europe; Öko-Institut/Agora lignite studies |
-| oil | 43.00 | World Bank + TYNDP, crude +5 % heavy-oil markup (2020 EUR) | **50** | Brent 2024 avg ~$80.5/bbl → ≈ €44–46/MWh incl. markup | EIA Brent series; OPEC MOMR |
+| oil | 43.00 | World Bank + TYNDP, crude +5 % heavy-oil markup (2020 EUR) | **45** | Brent 2024 avg ~$80.5/bbl → ≈ €44–46/MWh incl. markup | EIA Brent series; OPEC MOMR |
 | nuclear (fuel) | 7.45 | TYNDP 2024, EIA 2022 (2021 EUR) | **2.6** | Front-end fuel cycle at ESA 2024 multiannual contract price (142.26 EUR/kgU) + UxC conversion (~$55/kgU) / enrichment (~$160/SWU) / fabrication (~$350/kg); WNA arithmetic, 45 GWd/tU burnup | Euratom Supply Agency Market Observatory (official EU utility prices); UxC; WNA Economics of Nuclear Power |
 | biomass | 9.35 | IEA 2011 via old PyPSA assumptions (2015 EUR) | **25** | NWE industrial wood-pellet wholesale 2024 ≈ €120–140/t ÷ 4.8 MWh/t | Bioenergy Europe Statistical Report; EUROSTAT |
 | CO₂ | (off by default) | — | **65 EUR/tCO₂** | EEX EUA front-year 2024 calendar avg ≈ €65 | EEX EUA auctions; Ember carbon price tracker |
@@ -169,10 +173,9 @@ conventions in 2020/2021 money**, not observed prices. Upstream gas
 (42.90) is ~25 % above the 2024 TTF average; upstream coal (7.82) is
 roughly **half** the API2-implied 2024 value; upstream biomass (9.35) is
 a 2011-vintage number. Our overrides move every carrier to the observed
-2024 regime. Two of our values are themselves imperfect: coal 11 sits
-slightly below the API2-implied €13–15 band, and oil 50 sits ~10 % above
-the Brent-implied €44–46 (oil is almost never price-setting in the
-modelled zones, so the effect is negligible).
+2024 regime. All override values sit at the midpoint of their observed-2024 source
+band (reconciled 2026-06-12; the initial draft used rough placeholders
+of 32/11/50 for gas/coal/oil that did not match the cited bands).
 
 **Resulting effective marginal costs on the prepared network** (EUR/MWh
 electric, incl. VOM, efficiency, CO₂ at €65/t): CCGT 61.9, OCGT 85.0,
@@ -278,22 +281,39 @@ reproducing the observed 2024 order (lignite baseload, gas and coal
 alternating at the margin). Efficiency also scales specific emissions
 per MWh_el consistently.
 
-### 2.1c Wind annual-energy anchoring to Ember 2024
+### 2.1c Wind + solar annual-energy anchoring to observed 2024
 **Module**: `constraint_ladder/helpers/vre_anchoring.py`, applied at
 solve time by every run script (after `reset_to_lp_baseline`).
-**Operation**: per country, scales the wind `p_max_pu` time series by a
-single factor (clipped at 1.0, iteratively re-converged) so annual
-available wind energy matches Ember 2024 observed generation. Hourly
-shape stays 2024 meteorology.
-**Why needed**: the raw cutout shows the documented ERA5 regional bias
-— GB +52 %, NL +29 %, DE +22 % over; IT −43 %, ES −29 % under — plus
-missing wake/availability/curtailment losses. A ±30–50 % wind-energy
-error reshapes residual load and the zero-price / gas-setting hours,
+**Targets**: `constraint_ladder/data/vre_zone_targets_2024.csv`, built
+by `pypsa_setup/data_patches/build_vre_targets_2024.py` from ENTSO-E
+actual generation per bidding zone (fetched 2026-06-12; mixed 15/30/60-
+minute publication resolution resampled to hourly means before
+integrating).
+**Operation**: per anchoring group (usually one bidding zone; DE00+LUG1
+and IE00+GBNI share their ENTSO-E areas), scales the wind / solar
+`p_max_pu` series by a single factor (clipped at 1.0, iteratively
+re-converged) so annual available energy matches observed 2024
+generation. Hourly shape stays 2024 meteorology.
+**Consistency rule**: per country and carrier, if the ENTSO-E total is
+within 10 % of Ember's yearly value → ENTSO-E per-zone targets used
+directly (wind: 20 of 25 countries). Otherwise ENTSO-E zonal *shares*
+are kept but the country total is rescaled to Ember, which corrects the
+known Transparency-Platform coverage gaps (distributed solar: NL −98 %,
+HR −70 %, SE −56 %, IT −23 %, DE −14 % vs Ember). GB and the western
+Balkans (no ENTSO-E coverage) use Ember country totals. The basis per
+group is recorded in the targets CSV.
+**Why needed**: the raw cutout shows the documented reanalysis wind
+bias (Staffell & Pfenninger 2016; Jourdier 2020) — GB +52 %, NL +29 %,
+DE +22 % over; IT −43 %, ES −29 % under — plus missing
+wake/availability/curtailment losses. A ±30–50 % wind-energy error
+reshapes residual load and the zero-price / gas-setting hours,
 contaminating the price-shape validation.
 **Caveat**: observed generation embeds curtailment, slightly
-understating available energy in high-wind countries (conservative).
-Solar is NOT anchored (deviations are smaller and partly the AC/DC
-convention; documented as a limitation).
+understating available energy in high-VRE zones (conservative).
+**Hydro**: deliberately NOT switched to ENTSO-E — its hydro totals
+under-report against Ember in CH (−64 %), DE (−26 %), AT (−20 %)
+due to small-plant coverage, so the Ember-based EIA patch (§2.2)
+remains the hydro anchor.
 
 ### 2.2 EIA hydro statistics extension to 2024
 **Script**: `pypsa_setup/data_patches/extend_eia_hydro_2024.py`.

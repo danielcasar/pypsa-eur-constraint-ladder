@@ -135,10 +135,12 @@ atlite:
 #
 # Sources of the override values are documented in PYPSA_EUR_OVERRIDES.md.
 #
-#   * gas      32  -- TTF day-ahead 2024 average, EUR/MWh thermal
-#   * coal     11  -- CIF NW-Europe API2 2024 average, EUR/MWh thermal
+#   * gas      34  -- TTF day-ahead 2024 calendar average, EUR/MWh thermal
+#   * coal     14  -- API2 CIF ARA 2024 average (~$105-110/t, 6.98 MWh/t,
+#                    0.92 EUR/USD), EUR/MWh thermal
 #   * lignite   4  -- mine-mouth, stable
-#   * oil      50  -- Brent equivalent 2024 average
+#   * oil      45  -- Brent 2024 average ~$80.5/bbl incl. +5% heavy-oil
+#                    markup, EUR/MWh thermal
 #   * nuclear  2.6 -- full front-end fuel cycle at ESA 2024 multiannual
 #                    contract uranium price (142.26 EUR/kgU, Euratom Supply
 #                    Agency Market Observatory) + UxC conversion/enrichment;
@@ -155,10 +157,10 @@ costs:
   year: 2025
   overwrites:
     fuel:
-      gas: 32
-      coal: 11
+      gas: 34
+      coal: 14
       lignite: 4
-      oil: 50
+      oil: 45
       nuclear: 2.6
       uranium: 2.6
       biomass: 25
@@ -171,7 +173,7 @@ costs:
     # 42.5%; Oeko-Institut 2017 'Die deutsche Braunkohlenwirtschaft');
     # hard coal mixes modern DE units (Datteln 4 ~45%) with the Polish
     # fleet (~37-46%; Schroeder et al. 2013, DIW Data Doc 68: existing
-    # ~39%, new 46%). Resulting SRMC: lignite ~77, CCGT ~85, coal ~86.
+    # ~39%, new 46%). Resulting SRMC: lignite ~77, CCGT ~88, coal ~94.
     efficiency:
       coal: 0.40
       lignite: 0.42

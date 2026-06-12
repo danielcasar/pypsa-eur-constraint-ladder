@@ -18,13 +18,12 @@ from .native_constraints import (
     reset_to_lp_baseline,
     restore_ramping,
 )
-from .vre_anchoring import EMBER_WIND_2024_TWH, anchor_wind_generation
+from .vre_anchoring import anchor_vre_generation
 
 __all__ = [
     "DEFAULT_THERMAL_CARRIERS",
-    "EMBER_WIND_2024_TWH",
     "add_operational_reserve_margin",
-    "anchor_wind_generation",
+    "anchor_vre_generation",
     "apply_ramp_limits",
     "apply_voll_load_shedding",
     "build_calibration",

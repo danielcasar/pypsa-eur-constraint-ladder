@@ -26,7 +26,7 @@ from pathlib import Path
 import pypsa
 
 from constraint_ladder.helpers import (
-    anchor_wind_generation,
+    anchor_vre_generation,
     record_solve_metrics,
     reset_to_lp_baseline,
 )
@@ -59,8 +59,8 @@ def main() -> None:
 
     reset_to_lp_baseline(n)
 
-    anchored = anchor_wind_generation(n)
-    print("wind anchoring to Ember 2024 (per country):", flush=True)
+    anchored = anchor_vre_generation(n)
+    print("VRE anchoring to observed 2024 (per group):", flush=True)
     print(anchored.to_string(), flush=True)
 
     print("reset done; solving with barrier no-crossover...", flush=True)
