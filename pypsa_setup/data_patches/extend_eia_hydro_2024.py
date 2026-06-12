@@ -85,20 +85,30 @@ def main() -> None:
     )
     lines[header_idx] = lines[header_idx].rstrip(",") + ",2024"
 
+    import csv
+    import io
+
     n_filled = 0
     for i in range(header_idx + 1, len(lines)):
         if not lines[i].strip():
             continue
-        parts = lines[i].split(",")
+        # csv.reader handles quoted fields, so '"Germany, West"' parses
+        # as one field and does NOT match the plain "Germany" entry.
+        parts = next(csv.reader(io.StringIO(lines[i])))
         if len(parts) < 2:
             continue
-        name = parts[1].strip().strip('"').strip()
+        name = parts[1].strip()
         value = EMBER_HYDRO_2024_TWH.get(name)
         if value is None:
             lines[i] = lines[i] + ","
         else:
             lines[i] = lines[i] + f",{value}"
             n_filled += 1
+    expected = len(EMBER_HYDRO_2024_TWH)
+    assert n_filled == expected, (
+        f"filled {n_filled} rows, expected exactly {expected} -- "
+        "country-name matching is off, refusing to write"
+    )
 
     EIA_CSV.write_text("\n".join(lines) + "\n", encoding="utf-8")
     print(f"appended 2024 column: {n_filled} countries filled from Ember")
