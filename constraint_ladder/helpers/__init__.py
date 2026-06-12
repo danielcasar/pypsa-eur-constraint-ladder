@@ -18,6 +18,7 @@ from .native_constraints import (
     reset_to_lp_baseline,
     restore_ramping,
 )
+from .rolling_horizon import build_forecast_ratios, solve_rolling_horizon
 from .vre_anchoring import anchor_vre_generation
 
 __all__ = [
@@ -27,8 +28,10 @@ __all__ = [
     "apply_ramp_limits",
     "apply_voll_load_shedding",
     "build_calibration",
+    "build_forecast_ratios",
     "enable_unit_commitment",
     "record_solve_metrics",
     "reset_to_lp_baseline",
     "restore_ramping",
+    "solve_rolling_horizon",
 ]
