@@ -175,10 +175,13 @@ def solve_rolling_horizon(
             np.nan, index=sns, columns=soc_target.columns
         )
         pin.loc[window_ends] = soc_target.loc[window_ends].values
-        n.storage_units_t.state_of_charge_set = pin.reindex(
-            columns=n.storage_units_t.state_of_charge_set.columns
-            if len(n.storage_units_t.state_of_charge_set.columns)
-            else soc_target.columns
+        n.storage_units_t.state_of_charge_set = pin
+        # The annual reference solve is cyclic, so its first-window
+        # target is only reachable from the year-end state. Start the
+        # chain there instead of the static default (which is ~empty
+        # for the large reservoirs and makes window 0 infeasible).
+        su["state_of_charge_initial"] = soc_target.iloc[-1].reindex(su.index).fillna(
+            orig_soc_init
         )
 
     gens = n.generators
