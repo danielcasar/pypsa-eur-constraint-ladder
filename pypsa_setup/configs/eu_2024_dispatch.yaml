@@ -131,7 +131,14 @@ atlite:
 #   * coal     11  -- CIF NW-Europe API2 2024 average, EUR/MWh thermal
 #   * lignite   4  -- mine-mouth, stable
 #   * oil      50  -- Brent equivalent 2024 average
-#   * uranium 1.7  -- nuclear fuel cycle, stable
+#   * nuclear  2.6 -- full front-end fuel cycle at ESA 2024 multiannual
+#                    contract uranium price (142.26 EUR/kgU, Euratom Supply
+#                    Agency Market Observatory) + UxC conversion/enrichment;
+#                    targets the `nuclear` technology row directly because
+#                    the `uranium` carrier row does not propagate (see
+#                    PYPSA_EUR_OVERRIDES.md). Gives nuclear marginal cost
+#                    ~12.4 EUR/MWh_el.
+#   * uranium  2.6 -- kept consistent with `nuclear` (row itself is unread)
 #   * biomass  25  -- NorthWest Europe wholesale 2024
 #   * co2      65  -- EUA front-year contract 2024 average, EUR/tCO2
 #
@@ -144,7 +151,8 @@ costs:
       coal: 11
       lignite: 4
       oil: 50
-      uranium: 1.7
+      nuclear: 2.6
+      uranium: 2.6
       biomass: 25
   emission_prices:
     enable: true

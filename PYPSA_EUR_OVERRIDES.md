@@ -143,7 +143,7 @@ output `resources/eu_2024_dispatch/costs_2025_processed.csv` on 2026-06-12):
 | coal | 7.82 | TYNDP 2024 scenario inputs, IEA 2022 APS (2021 EUR) | **11** | API2 CIF ARA 2024 avg ≈ $105–115/t → ≈ €13–15/MWh_th at 6.98 MWh/t, 0.92 EUR/USD | Argus/McCloskey API2; EEX coal futures; Trading Economics |
 | lignite | 7.94 | TYNDP 2024, Booz&co Lignite G2 (2021 EUR) | **4** | Mine-mouth convention, €3–5 typical | EURACOAL Coal in Europe; Öko-Institut/Agora lignite studies |
 | oil | 43.00 | World Bank + TYNDP, crude +5 % heavy-oil markup (2020 EUR) | **50** | Brent 2024 avg ~$80.5/bbl → ≈ €44–46/MWh incl. markup | EIA Brent series; OPEC MOMR |
-| uranium | 7.45 | TYNDP 2024, EIA 2022 (2021 EUR) | **1.7** | Fuel-cycle cost estimate | Cameco/UxC; **but see note below — override ineffective** |
+| nuclear (fuel) | 7.45 | TYNDP 2024, EIA 2022 (2021 EUR) | **2.6** | Front-end fuel cycle at ESA 2024 multiannual contract price (142.26 EUR/kgU) + UxC conversion (~$55/kgU) / enrichment (~$160/SWU) / fabrication (~$350/kg); WNA arithmetic, 45 GWd/tU burnup | Euratom Supply Agency Market Observatory (official EU utility prices); UxC; WNA Economics of Nuclear Power |
 | biomass | 9.35 | IEA 2011 via old PyPSA assumptions (2015 EUR) | **25** | NWE industrial wood-pellet wholesale 2024 ≈ €120–140/t ÷ 4.8 MWh/t | Bioenergy Europe Statistical Report; EUROSTAT |
 | CO₂ | (off by default) | — | **65 EUR/tCO₂** | EEX EUA front-year 2024 calendar avg ≈ €65 | EEX EUA auctions; Ember carbon price tracker |
 
@@ -159,22 +159,25 @@ modelled zones, so the effect is negligible).
 
 **Resulting effective marginal costs on the prepared network** (EUR/MWh
 electric, incl. VOM, efficiency, CO₂ at €65/t): CCGT 61.9, OCGT 85.0,
-hard coal 35.0, lignite 16.2, nuclear 27.3, biomass 53.4, oil 150.9.
+hard coal 35.0, lignite 16.2, nuclear 12.4, biomass 53.4, oil 150.9.
 
 OCGT and CCGT fuel cost inherits from `gas` automatically in
 `scripts/process_cost_data.py` (line ~178), so overriding `gas` propagates
 to both gas-turbine technologies.
 
-**⚠ Uranium override is ineffective.** The `nuclear` technology row in
-`costs_2025.csv` carries its **own** `fuel` attribute (7.4536 EUR/MWh_th,
-copied from the uranium row upstream in technology-data, before our
-overwrite applies). Our `overwrites.fuel.uranium: 1.7` only modifies the
-standalone `uranium` row, which no electricity-only generator reads.
-Nuclear marginal cost therefore remains 4.46 (VOM) + 7.4536/0.326
-(fuel/η) = **27.3 EUR/MWh** — the TYNDP fuel-cycle convention — instead
-of the ~9.7 EUR/MWh our 1.7 override intended. To make the override
-effective one would add `nuclear: <value>` to `overwrites.fuel`.
-Decision pending; documented in the paper's limitations either way.
+**⚠ Uranium-row override does not propagate — target `nuclear` directly.**
+The `nuclear` technology row in `costs_2025.csv` carries its **own**
+`fuel` attribute (7.4536 EUR/MWh_th, copied from the uranium row
+upstream in technology-data, before any runtime overwrite applies). An
+`overwrites.fuel.uranium` entry only modifies the standalone `uranium`
+row, which no electricity-only generator reads — a silent no-op. We
+therefore overwrite `nuclear: 2.6` directly (the `uranium: 2.6` entry is
+kept purely for internal consistency). Resulting nuclear marginal cost:
+4.46 (VOM) + 2.6/0.326 (fuel/η) = **12.4 EUR/MWh**, consistent with
+published estimates of French nuclear bid levels (~10–20 EUR/MWh).
+History: an earlier `uranium: 1.7` was silently ineffective, leaving
+nuclear at the TYNDP-based 27.3 EUR/MWh through the first baseline runs;
+fixed 2026-06-12 with the ESA-based value.
 
 **Deprecation note**: PyPSA-Eur emits a `DeprecationWarning` recommending
 overrides via an external `data/custom_costs.csv`. For a single-paper run
