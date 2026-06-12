@@ -254,6 +254,20 @@ selection.
 shape-shifted data; major markets read from real series and ignore the
 synthetic fallback.
 
+### 2.2 EIA hydro statistics extension to 2024
+**Script**: `pypsa_setup/data_patches/extend_eia_hydro_2024.py`.
+**Touches**: `pypsa-eur/data/eia_hydro_annual_generation.csv`.
+**Operation**: Appends a 2024 column with observed net hydro generation
+per country from Ember's yearly electricity dataset (retrieved
+2026-06-12).
+**Why needed**: `build_hydro_profile` normalises weather-year inflow to
+the EIA annual statistic of the matching calendar year; the bundled
+file ends at 2023 and missing years fall back to the per-country
+**1980–2023 median**. 2024 was a wet year (ES 34.4 vs ~25 TWh in 2023,
+IT 53.1, AT 45.7, NO 139.6), so median normalisation under-delivered
+hydro by 20–30 % in NO/AT/ES/IT/FR — caught by the generation-mix gate.
+**Run-time**: idempotent; no-op once the 2024 column exists.
+
 ---
 
 ## 3. Known data gaps accepted as-is
