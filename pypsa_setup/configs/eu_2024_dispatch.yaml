@@ -164,7 +164,12 @@ costs:
       biomass: 25
   emission_prices:
     enable: true
-    co2: 65
+    # MUST be written as a float literal: prepare_network.py applies the
+    # price only under isinstance(co2, float), so a YAML int (65) is
+    # silently ignored -- no CO2 cost reaches any generator. Caught by
+    # the generation-mix gate on 2026-06-12 (coal/lignite dispatched
+    # ahead of gas, DE coal +439% vs observed 2024).
+    co2: 65.0
 
 
 # ----- solver ----------------------------------------------------------------

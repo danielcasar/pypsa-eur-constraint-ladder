@@ -196,6 +196,18 @@ History: an earlier `uranium: 1.7` was silently ineffective, leaving
 nuclear at the TYNDP-based 27.3 EUR/MWh through the first baseline runs;
 fixed 2026-06-12 with the ESA-based value.
 
+**⚠ CO₂ price must be a YAML float literal (`65.0`, not `65`).**
+`prepare_network.py` applies the flat emission price only under
+`isinstance(co2, float)`; a YAML integer silently falls through with no
+warning and **no CO₂ cost reaches any generator**. Caught by the
+generation-mix validation gate on 2026-06-12: without CO₂ the merit
+order inverts (lignite 16.2, coal 35.0 undercut CCGT 61.9 EUR/MWh) and
+the baseline dispatched DE hard coal at +439 % of observed 2024 while
+gas collapsed to ~zero continent-wide. With the float literal the
+effective marginal costs become lignite ≈ 96, hard coal ≈ 96,
+CCGT ≈ 84, OCGT ≈ 117 EUR/MWh — matching the observed 2024 gas-before-
+coal order. All solves before this date carried the artefact.
+
 **Deprecation note**: PyPSA-Eur emits a `DeprecationWarning` recommending
 overrides via an external `data/custom_costs.csv`. For a single-paper run
 the YAML form is fine; we accept the warning.
