@@ -1,11 +1,13 @@
 """Baseline LP dispatch on the continental 2024 prepared network.
 
-Solves the default PyPSA-Eur dispatch with no ladder constraints active
-(ramping is kept as part of the default baseline; UC and start-up costs
-are stripped via ``reset_to_lp_baseline``). Writes year-long per-zone
-shadow prices to ``results/baseline/shadow_price.csv`` and per-run
-solver metrics to ``results/baseline/solve_metrics.json`` so the
-paper's compute / scientific-value table is populated mechanically.
+Solves the textbook energy-only LP: no ramping, no UC, fixed
+transmission, fixed fleet (``reset_to_lp_baseline`` strips and guards
+everything). Writes year-long per-zone shadow prices to
+``results/baseline/shadow_price.csv``, per-run solver metrics to
+``results/baseline/solve_metrics.json``, the annual generation mix per
+country and carrier to ``results/baseline/generation_mix.csv``, and the
+full solved network to ``results/baseline/solved.nc`` for post-hoc
+validation.
 
 Wallclock on Marvin (Threadripper 3960X, 20 threads, Gurobi 13 barrier
 no-crossover): ~13 min for an 8760 h x ~50 zone x ~500 generator LP.
@@ -88,6 +90,33 @@ def main() -> None:
     n.buses_t.marginal_price.to_csv(RESULTS_DIR / "shadow_price.csv")
     print(f"shadow prices written to {RESULTS_DIR / 'shadow_price.csv'}", flush=True)
     print(f"solve metrics written to {RESULTS_DIR / 'solve_metrics.json'}", flush=True)
+
+    # Annual generation mix per country x carrier (TWh) for output-side
+    # validation against published 2024 statistics. Generators and
+    # storage units (hydro reservoir / PHS) reported separately.
+    gen_twh = (
+        n.generators_t.p.sum()
+        .groupby([n.generators.bus.str[:2], n.generators.carrier])
+        .sum()
+        .div(1e6)
+        .rename("twh")
+    )
+    su_twh = (
+        n.storage_units_t.p.clip(lower=0).sum()
+        .groupby([n.storage_units.bus.str[:2], n.storage_units.carrier])
+        .sum()
+        .div(1e6)
+        .rename("twh")
+    )
+    import pandas as pd
+
+    mix = pd.concat([gen_twh, su_twh])
+    mix.index.names = ["country", "carrier"]
+    mix.to_csv(RESULTS_DIR / "generation_mix.csv")
+    print(f"generation mix written to {RESULTS_DIR / 'generation_mix.csv'}", flush=True)
+
+    n.export_to_netcdf(RESULTS_DIR / "solved.nc")
+    print(f"solved network written to {RESULTS_DIR / 'solved.nc'}", flush=True)
 
     print("\nper-zone year-average shadow price (top 10):")
     print(n.buses_t.marginal_price.mean().sort_values(ascending=False).head(10))
