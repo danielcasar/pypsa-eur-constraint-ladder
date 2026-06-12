@@ -213,6 +213,16 @@ def solve_rolling_horizon(
             solver_name=solver_name,
             solver_options=solver_options or {},
         )
+        if condition != "optimal":
+            # Barrier without crossover often returns "suboptimal" on the
+            # small window LPs; dual simplex is exact and fast at this
+            # size. Retry once.
+            retry = dict(solver_options or {})
+            retry.pop("Crossover", None)
+            retry["Method"] = 1
+            status, condition = n.optimize(
+                snapshots=w, solver_name=solver_name, solver_options=retry
+            )
         records.append(
             {"window": w_i, "start": w[0], "status": status, "condition": condition}
         )
