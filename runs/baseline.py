@@ -25,7 +25,11 @@ from pathlib import Path
 
 import pypsa
 
-from constraint_ladder.helpers import record_solve_metrics, reset_to_lp_baseline
+from constraint_ladder.helpers import (
+    anchor_wind_generation,
+    record_solve_metrics,
+    reset_to_lp_baseline,
+)
 
 
 NETWORK_PATH = Path("pypsa-eur/resources/eu_2024_dispatch/networks/base_s_adm_elec_.nc")
@@ -54,6 +58,11 @@ def main() -> None:
     )
 
     reset_to_lp_baseline(n)
+
+    anchored = anchor_wind_generation(n)
+    print("wind anchoring to Ember 2024 (per country):", flush=True)
+    print(anchored.to_string(), flush=True)
+
     print("reset done; solving with barrier no-crossover...", flush=True)
 
     status, condition = n.optimize(solver_name=SOLVER_NAME, solver_options=SOLVER_OPTIONS)

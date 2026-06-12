@@ -162,6 +162,19 @@ costs:
       nuclear: 2.6
       uranium: 2.6
       biomass: 25
+    # Marginal-unit efficiencies for the 2024 operating fleet instead of
+    # the generic fleet averages in costs_2025.csv (lignite 0.33, coal
+    # 0.356). At EUA 65 the averages price lignite ABOVE CCGT and coal
+    # collapses to -82% of observed 2024 generation (gate finding,
+    # 2026-06-12). Post-phase-out marginal units: German lignite is
+    # BoA-class (Neurath F/G 43.6%, Niederaussem K 43.2%, Lippendorf
+    # 42.5%; Oeko-Institut 2017 'Die deutsche Braunkohlenwirtschaft');
+    # hard coal mixes modern DE units (Datteln 4 ~45%) with the Polish
+    # fleet (~37-46%; Schroeder et al. 2013, DIW Data Doc 68: existing
+    # ~39%, new 46%). Resulting SRMC: lignite ~77, CCGT ~85, coal ~86.
+    efficiency:
+      coal: 0.40
+      lignite: 0.42
   emission_prices:
     enable: true
     # MUST be written as a float literal: prepare_network.py applies the

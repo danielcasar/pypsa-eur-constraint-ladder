@@ -254,6 +254,47 @@ selection.
 shape-shifted data; major markets read from real series and ignore the
 synthetic fallback.
 
+### 2.1b Marginal-unit efficiency overrides (coal / lignite)
+```yaml
+costs:
+  overwrites:
+    efficiency:
+      coal: 0.40
+      lignite: 0.42
+```
+`costs_2025.csv` carries generic fleet-average efficiencies (lignite
+0.33, hard coal 0.356) under which, at EUA 65 EUR/t, lignite prices at
+96 EUR/MWh — *above* CCGT at 85 — and modelled coal generation
+collapses to −82 % of observed 2024 (gate finding, 2026-06-12). The
+2024 *operating* fleet is far more efficient after the phase-out
+closures: German lignite is dominated by BoA-class units (Neurath F/G
+43.6 %, Niederaussem K 43.2 %, Lippendorf 42.5 %; Öko-Institut 2017,
+*Die deutsche Braunkohlenwirtschaft*, unit-level data), and the
+remaining hard-coal fleet mixes modern German units (Datteln 4 ~45 %)
+with the Polish fleet (new 45–46 %, 200-MW class ~37 %; Schröder et
+al. 2013, DIW Data Documentation 68: existing ~39 %, new 46 %).
+Resulting SRMC: lignite ≈ 77, CCGT ≈ 85, hard coal ≈ 86 EUR/MWh —
+reproducing the observed 2024 order (lignite baseload, gas and coal
+alternating at the margin). Efficiency also scales specific emissions
+per MWh_el consistently.
+
+### 2.1c Wind annual-energy anchoring to Ember 2024
+**Module**: `constraint_ladder/helpers/vre_anchoring.py`, applied at
+solve time by every run script (after `reset_to_lp_baseline`).
+**Operation**: per country, scales the wind `p_max_pu` time series by a
+single factor (clipped at 1.0, iteratively re-converged) so annual
+available wind energy matches Ember 2024 observed generation. Hourly
+shape stays 2024 meteorology.
+**Why needed**: the raw cutout shows the documented ERA5 regional bias
+— GB +52 %, NL +29 %, DE +22 % over; IT −43 %, ES −29 % under — plus
+missing wake/availability/curtailment losses. A ±30–50 % wind-energy
+error reshapes residual load and the zero-price / gas-setting hours,
+contaminating the price-shape validation.
+**Caveat**: observed generation embeds curtailment, slightly
+understating available energy in high-wind countries (conservative).
+Solar is NOT anchored (deviations are smaller and partly the AC/DC
+convention; documented as a limitation).
+
 ### 2.2 EIA hydro statistics extension to 2024
 **Script**: `pypsa_setup/data_patches/extend_eia_hydro_2024.py`.
 **Touches**: `pypsa-eur/data/eia_hydro_annual_generation.csv`.
