@@ -132,23 +132,49 @@ quinquennial horizons (2020, 2025, 2030, ..., 2050). `costs_2024.csv`
 does not exist (verified HTTP 404). 2025 is the nearest published file
 and is structurally close to actual 2024 prices.
 
-**Per-attribute fuel-cost overrides** (all in EUR/MWh thermal):
+**Full comparison: upstream values vs our overrides** (all fuel in EUR/MWh
+thermal; verified against the raw archive file
+`pypsa-eur/data/costs/archive/v0.14.0/costs_2025.csv` and the processed
+output `resources/eu_2024_dispatch/costs_2025_processed.csv` on 2026-06-12):
 
-| Carrier | Override | Source |
-|---|---|---|
-| gas | 32 | TTF day-ahead 2024 calendar-year average (peaks Q1 ~55, lows Q3 ~25) |
-| coal | 11 | CIF NWE API2 2024 average, converted to MWh-thermal |
-| lignite | 4 | Mine-mouth, stable across years |
-| oil | 50 | Brent 2024 average ~$80/bbl in MWh-thermal equivalent |
-| uranium | 1.7 | Nuclear fuel cycle cost, stable |
-| biomass | 25 | Northwest Europe wholesale 2024 |
+| Carrier | Upstream | Upstream basis (money year) | Override | 2024-observed basis | Sources to double-check |
+|---|---|---|---|---|---|
+| gas | 42.90 | World Bank Commodity Markets + TYNDP 2024 scenario inputs (2020 EUR) | **32** | TTF day-ahead 2024 calendar avg ≈ €34 (Q1 ~27, Q4 ~45) | ICE Endex TTF; EEX spot indices; ACER wholesale market reports |
+| coal | 7.82 | TYNDP 2024 scenario inputs, IEA 2022 APS (2021 EUR) | **11** | API2 CIF ARA 2024 avg ≈ $105–115/t → ≈ €13–15/MWh_th at 6.98 MWh/t, 0.92 EUR/USD | Argus/McCloskey API2; EEX coal futures; Trading Economics |
+| lignite | 7.94 | TYNDP 2024, Booz&co Lignite G2 (2021 EUR) | **4** | Mine-mouth convention, €3–5 typical | EURACOAL Coal in Europe; Öko-Institut/Agora lignite studies |
+| oil | 43.00 | World Bank + TYNDP, crude +5 % heavy-oil markup (2020 EUR) | **50** | Brent 2024 avg ~$80.5/bbl → ≈ €44–46/MWh incl. markup | EIA Brent series; OPEC MOMR |
+| uranium | 7.45 | TYNDP 2024, EIA 2022 (2021 EUR) | **1.7** | Fuel-cycle cost estimate | Cameco/UxC; **but see note below — override ineffective** |
+| biomass | 9.35 | IEA 2011 via old PyPSA assumptions (2015 EUR) | **25** | NWE industrial wood-pellet wholesale 2024 ≈ €120–140/t ÷ 4.8 MWh/t | Bioenergy Europe Statistical Report; EUROSTAT |
+| CO₂ | (off by default) | — | **65 EUR/tCO₂** | EEX EUA front-year 2024 calendar avg ≈ €65 | EEX EUA auctions; Ember carbon price tracker |
+
+Key reading of the comparison: the upstream values are **TYNDP scenario
+conventions in 2020/2021 money**, not observed prices. Upstream gas
+(42.90) is ~25 % above the 2024 TTF average; upstream coal (7.82) is
+roughly **half** the API2-implied 2024 value; upstream biomass (9.35) is
+a 2011-vintage number. Our overrides move every carrier to the observed
+2024 regime. Two of our values are themselves imperfect: coal 11 sits
+slightly below the API2-implied €13–15 band, and oil 50 sits ~10 % above
+the Brent-implied €44–46 (oil is almost never price-setting in the
+modelled zones, so the effect is negligible).
+
+**Resulting effective marginal costs on the prepared network** (EUR/MWh
+electric, incl. VOM, efficiency, CO₂ at €65/t): CCGT 61.9, OCGT 85.0,
+hard coal 35.0, lignite 16.2, nuclear 27.3, biomass 53.4, oil 150.9.
 
 OCGT and CCGT fuel cost inherits from `gas` automatically in
 `scripts/process_cost_data.py` (line ~178), so overriding `gas` propagates
 to both gas-turbine technologies.
 
-**CO₂ price override**: `emission_prices.enable: true, co2: 65` — EUA
-front-year contract 2024 calendar-year average ~EUR 65/tCO2.
+**⚠ Uranium override is ineffective.** The `nuclear` technology row in
+`costs_2025.csv` carries its **own** `fuel` attribute (7.4536 EUR/MWh_th,
+copied from the uranium row upstream in technology-data, before our
+overwrite applies). Our `overwrites.fuel.uranium: 1.7` only modifies the
+standalone `uranium` row, which no electricity-only generator reads.
+Nuclear marginal cost therefore remains 4.46 (VOM) + 7.4536/0.326
+(fuel/η) = **27.3 EUR/MWh** — the TYNDP fuel-cycle convention — instead
+of the ~9.7 EUR/MWh our 1.7 override intended. To make the override
+effective one would add `nuclear: <value>` to `overwrites.fuel`.
+Decision pending; documented in the paper's limitations either way.
 
 **Deprecation note**: PyPSA-Eur emits a `DeprecationWarning` recommending
 overrides via an external `data/custom_costs.csv`. For a single-paper run
