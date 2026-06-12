@@ -12,6 +12,7 @@ from .metrics import record_solve_metrics
 from .native_constraints import (
     DEFAULT_THERMAL_CARRIERS,
     add_operational_reserve_margin,
+    apply_ramp_limits,
     apply_voll_load_shedding,
     enable_unit_commitment,
     reset_to_lp_baseline,
@@ -21,6 +22,7 @@ from .native_constraints import (
 __all__ = [
     "DEFAULT_THERMAL_CARRIERS",
     "add_operational_reserve_margin",
+    "apply_ramp_limits",
     "apply_voll_load_shedding",
     "build_calibration",
     "enable_unit_commitment",

@@ -86,6 +86,14 @@ electricity:
     StorageUnit: []
     Store: []
     Link: []
+  # Fix the transmission grid at today's volume. The upstream default
+  # (vopt) marks every AC line and DC link extendable and lets the LP
+  # co-optimise expansion (bounded at +20 GW/line, +30 GW/link by
+  # prepare_network) -- silently relaxing congestion and flattening
+  # inter-zonal price spreads in what is meant to be a pure dispatch
+  # backtest. v1.0 keeps s_nom/p_nom fixed (set_transmission_limit only
+  # makes components extendable for factor > 1.0 or 'opt').
+  transmission_limit: v1.0
   # PyPSA-Eur's default is from_powerplantmatching=True, which lags
   # actual deployment because it relies on unit-level commissioning
   # data (OPSD/GEM/JRC) -- many 2024 solar additions in DE/IT/NL/BE/PL

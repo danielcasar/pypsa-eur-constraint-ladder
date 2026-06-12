@@ -29,14 +29,23 @@ DEFAULT_THERMAL_CARRIERS: tuple[str, ...] = (
 
 
 def reset_to_lp_baseline(n: pypsa.Network) -> dict[str, pd.Series]:
-    """Strip non-default LP / MIP features so the network solves as the baseline.
+    """Strip non-baseline features so the network solves as the textbook LP.
 
-    The paper's baseline equates to "PyPSA-Eur with its default
-    workflow output": ramping limits are kept (default-on), unit
-    commitment and start-up costs are stripped (default-off and
-    re-applied only at the UC ladder step). Stores the original
-    commitment flags + start-up costs so :func:`enable_unit_commitment`
-    can restore them at the relevant step.
+    The paper's baseline is the textbook energy-only LP: continuous
+    dispatch, snapshot-separable supply (no ramping), no unit
+    commitment, fixed transmission. Ramping is an explicit ladder step
+    (see :func:`apply_ramp_limits`) because PyPSA-Eur's default
+    electricity-only workflow leaves the per-unit ramp-rate data
+    unloaded anyway. Stores the original attribute values so later
+    ladder steps can restore them where relevant.
+
+    Also pins the transmission grid: PyPSA-Eur's upstream default
+    ``transmission_limit: vopt`` marks every AC line and DC link
+    extendable, which would let a nominally dispatch-only LP
+    co-optimise grid expansion and flatten inter-zonal price spreads.
+    The config override (``transmission_limit: v1.0``) prevents this at
+    the prepare stage; the explicit reset here guards against running
+    on a network prepared before that override existed.
     """
     snapshot: dict[str, pd.Series] = {
         "ramp_limit_up": n.generators["ramp_limit_up"].copy(),
@@ -52,12 +61,17 @@ def reset_to_lp_baseline(n: pypsa.Network) -> dict[str, pd.Series]:
             "min_down_time", pd.Series(0, index=n.generators.index)
         ).copy(),
     }
-    # Ramping limits are part of the baseline (default-on across 6 of 7
-    # surveyed ESOMs and active in PyPSA-Eur's default workflow); only
-    # UC-related attributes are stripped.
+    # Baseline LP: no inter-temporal supply coupling, no UC attributes.
+    n.generators["ramp_limit_up"] = np.nan
+    n.generators["ramp_limit_down"] = np.nan
     n.generators["committable"] = False
     if "start_up_cost" in n.generators.columns:
         n.generators["start_up_cost"] = 0.0
+    # Dispatch-only guard: no expansion variables of any component class.
+    n.lines["s_nom_extendable"] = False
+    n.links["p_nom_extendable"] = False
+    n.generators["p_nom_extendable"] = False
+    n.storage_units["p_nom_extendable"] = False
     return snapshot
 
 
@@ -101,10 +115,48 @@ def apply_voll_load_shedding(
     return added
 
 
+def apply_ramp_limits(
+    n: pypsa.Network,
+    unit_commitment_csv: str = "pypsa-eur/data/unit_commitment.csv",
+) -> int:
+    """Activate per-generator ramp limits (the ramping ladder step).
+
+    PyPSA-Eur ships per-carrier ramp rates in ``data/unit_commitment.csv``
+    but its default electricity-only workflow never attaches them to the
+    generators (that happens only under ``conventional.unit_commitment:
+    true``, which also flips the problem to MIP). This helper loads just
+    the LP-compatible ramp attributes from that file, leaving the
+    UC-only attributes (``committable``, start-up costs, min up/down
+    times) for :func:`enable_unit_commitment` at the MIP step.
+
+    Returns
+    -------
+    int
+        Number of generators that received a ramp limit.
+    """
+    uc = pd.read_csv(unit_commitment_csv, index_col=0)
+    touched = pd.Series(False, index=n.generators.index)
+    for carrier in uc.columns:
+        sel = n.generators.carrier == carrier
+        if not sel.any():
+            continue
+        for attr in ("ramp_limit_up", "ramp_limit_down"):
+            value = uc.at[attr, carrier] if attr in uc.index else np.nan
+            if pd.notna(value):
+                n.generators.loc[sel, attr] = float(value)
+                touched |= sel
+    return int(touched.sum())
+
+
 def restore_ramping(
     n: pypsa.Network, snapshot: dict[str, pd.Series]
 ) -> None:
-    """Re-apply the ramp limits saved by :func:`reset_to_lp_baseline`."""
+    """Re-apply the ramp limits saved by :func:`reset_to_lp_baseline`.
+
+    Deprecated for the ladder itself: the prepared default network
+    carries no ramp limits, so the snapshot holds NaN and restoring it
+    is a no-op. Use :func:`apply_ramp_limits` for the ramping step.
+    """
     n.generators["ramp_limit_up"] = snapshot["ramp_limit_up"]
     n.generators["ramp_limit_down"] = snapshot["ramp_limit_down"]
 

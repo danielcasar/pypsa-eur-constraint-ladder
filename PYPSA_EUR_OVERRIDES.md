@@ -91,6 +91,23 @@ All extendable carrier lists empty, so neither the electricity LP nor
 the sector LP introduces capacity-expansion variables. The model is
 pure dispatch on the 2024-pinned fleet.
 
+```yaml
+electricity:
+  transmission_limit: v1.0
+```
+**Transmission grid pinned (added 2026-06-12).** The upstream default
+`transmission_limit: vopt` marks **every AC line and DC link
+extendable** (`set_transmission_limit` in `prepare_network.py` flips
+`s_nom_extendable` / `p_nom_extendable` for factor `opt` or > 1.0), so
+a nominally dispatch-only run silently co-optimises transmission
+expansion (bounded at +20 GW/line and +30 GW/link), relaxing congestion
+and flattening inter-zonal price spreads. `v1.0` keeps the grid at
+today's volume with no expansion variables. Discovered in the
+pre-ladder audit: all baseline solves before this date carried the
+artefact and were re-run. Belt-and-braces: `reset_to_lp_baseline()` in
+`constraint_ladder/helpers/native_constraints.py` also force-clears all
+extendable flags at solve time.
+
 The renewable-capacity source is switched from
 `from_powerplantmatching` (default; unit-level OPSD/GEM/JRC data that
 lags actual deployment) to `from_irenastat` (IRENA country-aggregate
