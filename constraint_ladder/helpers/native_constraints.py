@@ -148,6 +148,49 @@ def apply_ramp_limits(
     return int(touched.sum())
 
 
+def apply_unit_commitment_csv(
+    n: pypsa.Network,
+    unit_commitment_csv: str = "pypsa-eur/data/unit_commitment.csv",
+) -> int:
+    """Activate full unit commitment from PyPSA-Eur's per-carrier data.
+
+    Marks the carriers present in ``unit_commitment.csv`` committable
+    and assigns every UC-relevant attribute the file carries: minimum
+    stable load (``p_min_pu`` -- the attribute that makes the MIP
+    non-trivial), start-up cost (EUR/MW scaled by ``p_nom``), minimum
+    up/down times, and the ramp limits including the start-up /
+    shut-down variants.
+
+    Returns the number of committable generators.
+    """
+    uc = pd.read_csv(unit_commitment_csv, index_col=0)
+    n_committable = 0
+    for carrier in uc.columns:
+        sel = n.generators.carrier == carrier
+        if not sel.any():
+            continue
+        n.generators.loc[sel, "committable"] = True
+        n_committable += int(sel.sum())
+        for attr in (
+            "p_min_pu",
+            "ramp_limit_up",
+            "ramp_limit_down",
+            "ramp_limit_start_up",
+            "ramp_limit_shut_down",
+        ):
+            if attr in uc.index and pd.notna(uc.at[attr, carrier]):
+                n.generators.loc[sel, attr] = float(uc.at[attr, carrier])
+        for attr in ("min_up_time", "min_down_time"):
+            if attr in uc.index and pd.notna(uc.at[attr, carrier]):
+                n.generators.loc[sel, attr] = int(uc.at[attr, carrier])
+        if "start_up_cost" in uc.index and pd.notna(uc.at["start_up_cost", carrier]):
+            n.generators.loc[sel, "start_up_cost"] = (
+                float(uc.at["start_up_cost", carrier])
+                * n.generators.loc[sel, "p_nom"]
+            )
+    return n_committable
+
+
 def restore_ramping(
     n: pypsa.Network, snapshot: dict[str, pd.Series]
 ) -> None:
