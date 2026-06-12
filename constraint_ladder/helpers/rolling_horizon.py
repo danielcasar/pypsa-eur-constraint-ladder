@@ -135,6 +135,7 @@ def solve_rolling_horizon(
     *,
     horizon: int = 24,
     ratios: dict[str, pd.DataFrame] | None = None,
+    soc_target: pd.DataFrame | None = None,
     solver_name: str = "gurobi",
     solver_options: dict | None = None,
     log_every: int = 50,
@@ -147,6 +148,15 @@ def solve_rolling_horizon(
     are used (foresight-truncation step). Storage state of charge is
     carried between windows; cyclic constraints are disabled.
 
+    ``soc_target`` (index: snapshots, columns: storage units; typically
+    ``n.storage_units_t.state_of_charge`` from the annual
+    perfect-foresight solve) pins each window's terminal state of charge
+    to the long-term trajectory via ``state_of_charge_set``. Without it,
+    a myopic window assigns storage no future value and dumps the
+    reservoirs --- the known degenerate behaviour of naive rolling
+    horizons. Pinning reproduces the real market structure where
+    day-ahead dispatch sits on top of longer-term hydro scheduling.
+
     Returns a per-window status DataFrame. Duals accumulate in
     ``n.buses_t.marginal_price`` window by window.
     """
@@ -156,7 +166,20 @@ def solve_rolling_horizon(
     su = n.storage_units
     orig_cyclic = su.cyclic_state_of_charge.copy()
     orig_soc_init = su.state_of_charge_initial.copy()
+    orig_soc_set = n.storage_units_t.state_of_charge_set.copy()
     su["cyclic_state_of_charge"] = False
+    if soc_target is not None:
+        # Pin only the last snapshot of every window.
+        window_ends = [w[-1] for w in windows]
+        pin = pd.DataFrame(
+            np.nan, index=sns, columns=soc_target.columns
+        )
+        pin.loc[window_ends] = soc_target.loc[window_ends].values
+        n.storage_units_t.state_of_charge_set = pin.reindex(
+            columns=n.storage_units_t.state_of_charge_set.columns
+            if len(n.storage_units_t.state_of_charge_set.columns)
+            else soc_target.columns
+        )
 
     gens = n.generators
     vre_zone = {}
@@ -204,6 +227,7 @@ def solve_rolling_horizon(
     # Restore mutated statics and (in forecast mode) the realised inputs.
     su["cyclic_state_of_charge"] = orig_cyclic
     su["state_of_charge_initial"] = orig_soc_init
+    n.storage_units_t.state_of_charge_set = orig_soc_set
     if ratios is not None:
         n.generators_t.p_max_pu = orig_p_max_pu
         n.loads_t.p_set = orig_p_set
