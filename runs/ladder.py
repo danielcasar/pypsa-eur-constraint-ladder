@@ -14,14 +14,17 @@ Cumulative order (each step adds to all previous):
   2  +elastic      PWL price-elastic demand (QP)
   3  +ramping      per-generator ramp limits
   4  +reserves     energy-and-reserve co-clearing (extra_functionality)
-  5  +subsidy      DE must-take + EEG subsidy floor
-  6  +rolling      switch to 24 h rolling horizon (realised series)
-  7  +forecast     windows replayed on D-1 forecast information
-  8  +uc           unit commitment with start-up costs (windowed MIP)
+  5  +rolling      switch to 24 h rolling horizon (realised series)
+  6  +forecast     windows replayed on D-1 forecast information
+  7  +uc           unit commitment with start-up costs (windowed MIP)
 
-Steps 0-5 solve annually; 6-8 solve in 24 h windows (storage SOC pinned
+Steps 0-4 solve annually; 5-7 solve in 24 h windows (storage SOC pinned
 to the annual perfect-foresight trajectory). Reserves, once added at
 step 4, stay active through the windowed steps via extra_functionality.
+
+The German EEG subsidy floor is intentionally excluded: it is a
+zone-specific (DE) mechanism, run separately via runs/profiling.py
+'subsidy_de' as a Germany case study rather than pooled here.
 
 Usage (from the directory containing ``pypsa-eur/``):
 
@@ -40,11 +43,7 @@ from pathlib import Path
 import pandas as pd
 import pypsa
 
-from constraint_ladder.constraints import (
-    apply_de_must_take,
-    apply_de_subsidy_floor,
-    apply_price_elastic_demand,
-)
+from constraint_ladder.constraints import apply_price_elastic_demand
 from constraint_ladder.helpers import (
     add_operational_reserve_margin,
     anchor_vre_generation,
@@ -82,16 +81,20 @@ MIP_OPTIONS = {"MIPGap": 0.01, "Threads": 20, "Seed": 123, "TimeLimit": 3600}
 RESERVE_KWARGS = dict(epsilon_load=0.02, epsilon_vres=0.02, contingency_mw=4000.0)
 VOLL_EUR_PER_MWH = 8000.0
 
-# Cumulative step indices.
+# Cumulative step indices. The German EEG subsidy floor is NOT part of
+# the pooled continental ladder -- its negative-price bidding is a
+# largely German legacy-EEG phenomenon, so it is run separately as a DE
+# case study (see runs/profiling.py 'subsidy_de'), not pooled across the
+# 41 validated zones.
 STEPS = [
     "00_baseline", "01_voll", "02_elastic", "03_ramping", "04_reserves",
-    "05_subsidy", "06_rolling", "07_forecast", "08_uc",
+    "05_rolling", "06_forecast", "07_uc",
 ]
 IDX = {name: i for i, name in enumerate(STEPS)}
-ROLLING_FROM = IDX["06_rolling"]
+ROLLING_FROM = IDX["05_rolling"]
 RESERVES_FROM = IDX["04_reserves"]
-FORECAST_FROM = IDX["07_forecast"]
-UC_FROM = IDX["08_uc"]
+FORECAST_FROM = IDX["06_forecast"]
+UC_FROM = IDX["07_uc"]
 
 
 def zone_calibration(n):
@@ -119,9 +122,6 @@ def build_cumulative(weeks: int | None, target: int) -> pypsa.Network:
         apply_price_elastic_demand(n, prices, loads)
     if target >= IDX["03_ramping"]:
         apply_ramp_limits(n, UC_CSV)
-    if target >= IDX["05_subsidy"]:
-        apply_de_must_take(n)
-        apply_de_subsidy_floor(n)
     if target >= UC_FROM:
         n_comm = apply_unit_commitment_csv(n, UC_CSV)
         print(f"  committable generators: {n_comm}", flush=True)
