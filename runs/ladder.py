@@ -15,10 +15,9 @@ Cumulative order (each step adds to all previous):
   3  +ramping      per-generator ramp limits
   4  +reserves     energy-and-reserve co-clearing (extra_functionality)
   5  +rolling      switch to 24 h rolling horizon (realised series)
-  6  +forecast     windows replayed on D-1 forecast information
-  7  +uc           unit commitment with start-up costs (windowed MIP)
+  6  +uc           unit commitment with start-up costs (windowed MIP)
 
-Steps 0-4 solve annually; 5-7 solve in 24 h windows (storage SOC pinned
+Steps 0-4 solve annually; 5-6 solve in 24 h windows (storage SOC pinned
 to the annual perfect-foresight trajectory). Reserves, once added at
 step 4, stay active through the windowed steps via extra_functionality.
 
@@ -50,7 +49,6 @@ from constraint_ladder.helpers import (
     apply_ramp_limits,
     apply_unit_commitment_csv,
     apply_voll_load_shedding,
-    build_forecast_ratios,
     record_solve_metrics,
     reset_to_lp_baseline,
     solve_rolling_horizon,
@@ -60,8 +58,6 @@ from constraint_ladder.helpers import (
 
 NETWORK_PATH = Path("pypsa-eur/resources/eu_2024_dispatch/networks/base_s_adm_elec_.nc")
 BASELINE_SOLVED = Path("results/baseline/solved.nc")
-FORECASTS_DIR = Path("calibration_data/ENTSOE_forecasts_2024")
-GENERATION_DIR = Path("calibration_data/ENTSOE_generation_2024")
 ZONE_PRICE_CSV = Path("ladder/constraint_ladder/data/zone_mean_price_2024.csv")
 UC_CSV = "pypsa-eur/data/unit_commitment.csv"
 RESULTS_ROOT = Path("results/ladder")
@@ -88,13 +84,12 @@ VOLL_EUR_PER_MWH = 8000.0
 # 41 validated zones.
 STEPS = [
     "00_baseline", "01_voll", "02_elastic", "03_ramping", "04_reserves",
-    "05_rolling", "06_forecast", "07_uc",
+    "05_rolling", "06_uc",
 ]
 IDX = {name: i for i, name in enumerate(STEPS)}
 ROLLING_FROM = IDX["05_rolling"]
 RESERVES_FROM = IDX["04_reserves"]
-FORECAST_FROM = IDX["06_forecast"]
-UC_FROM = IDX["07_uc"]
+UC_FROM = IDX["06_uc"]
 
 
 def zone_calibration(n):
@@ -159,12 +154,8 @@ def solve_step(name: str, weeks: int | None) -> None:
         )
     else:
         soc = pypsa.Network(BASELINE_SOLVED).storage_units_t.state_of_charge
-        ratios = (
-            build_forecast_ratios(n, FORECASTS_DIR, GENERATION_DIR)
-            if target >= FORECAST_FROM else None
-        )
         res = solve_rolling_horizon(
-            n, horizon=24, ratios=ratios, soc_target=soc,
+            n, horizon=24, ratios=None, soc_target=soc,
             extra_functionality=reserve_fn,
             solver_name=SOLVER_NAME, solver_options=options,
         )

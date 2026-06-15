@@ -261,7 +261,6 @@ def main() -> None:
     guard("reserves", run_reserves)
     guard("subsidy_de", lambda: run_annual("subsidy_de", setup_subsidy, "LP", LP_OPTIONS))
     guard("rolling", lambda: run_rolling("rolling", with_forecast=False))
-    guard("forecast", lambda: run_rolling("forecast", with_forecast=True))
     guard("uc", lambda: run_annual("uc", setup_uc, "MIP", MIP_OPTIONS))
 
 
