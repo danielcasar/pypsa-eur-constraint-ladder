@@ -212,55 +212,52 @@ def run_rolling(name: str, with_forecast: bool) -> None:
 
 
 def main() -> None:
+    import traceback
+
     only = set(sys.argv[1:])
 
     def wants(name: str) -> bool:
         return not only or name in only
 
-    if wants("voll"):
-        run_annual(
-            "voll",
-            lambda n: apply_voll_load_shedding(n, voll_eur_per_mwh=VOLL_EUR_PER_MWH),
-            "LP",
-            LP_OPTIONS,
-        )
-    if wants("elastic"):
+    def guard(name: str, fn) -> None:
+        """Run one config, log and continue on failure (per-config isolation)."""
+        if not wants(name):
+            return
+        try:
+            fn()
+        except Exception:
+            traceback.print_exc()
+            print(f"[{name}] FAILED -- continuing with remaining configs", flush=True)
 
-        def setup_elastic(n):
-            apply_voll_load_shedding(n, voll_eur_per_mwh=VOLL_EUR_PER_MWH)
-            prices, loads = zone_calibration(n)
-            apply_price_elastic_demand(n, prices, loads)
+    def setup_elastic(n):
+        apply_voll_load_shedding(n, voll_eur_per_mwh=VOLL_EUR_PER_MWH)
+        prices, loads = zone_calibration(n)
+        apply_price_elastic_demand(n, prices, loads)
 
-        run_annual("elastic", setup_elastic, "QP", LP_OPTIONS)
-    if wants("ramping"):
-        run_annual(
-            "ramping",
-            lambda n: apply_ramp_limits(n, "pypsa-eur/data/unit_commitment.csv"),
-            "LP",
-            LP_OPTIONS,
-        )
-    if wants("reserves"):
-        run_reserves()
-    if wants("subsidy_de"):
+    def setup_subsidy(n):
+        apply_voll_load_shedding(n, voll_eur_per_mwh=VOLL_EUR_PER_MWH)
+        apply_de_must_take(n)
+        apply_de_subsidy_floor(n)
 
-        def setup_subsidy(n):
-            apply_voll_load_shedding(n, voll_eur_per_mwh=VOLL_EUR_PER_MWH)
-            apply_de_must_take(n)
-            apply_de_subsidy_floor(n)
+    def setup_uc(n):
+        apply_voll_load_shedding(n, voll_eur_per_mwh=VOLL_EUR_PER_MWH)
+        n_comm = apply_unit_commitment_csv(n, "pypsa-eur/data/unit_commitment.csv")
+        print(f"  committable generators: {n_comm}", flush=True)
 
-        run_annual("subsidy_de", setup_subsidy, "LP", LP_OPTIONS)
-    if wants("rolling"):
-        run_rolling("rolling", with_forecast=False)
-    if wants("forecast"):
-        run_rolling("forecast", with_forecast=True)
-    if wants("uc"):
-
-        def setup_uc(n):
-            apply_voll_load_shedding(n, voll_eur_per_mwh=VOLL_EUR_PER_MWH)
-            n_comm = apply_unit_commitment_csv(n, "pypsa-eur/data/unit_commitment.csv")
-            print(f"  committable generators: {n_comm}", flush=True)
-
-        run_annual("uc", setup_uc, "MIP", MIP_OPTIONS)
+    guard("voll", lambda: run_annual(
+        "voll",
+        lambda n: apply_voll_load_shedding(n, voll_eur_per_mwh=VOLL_EUR_PER_MWH),
+        "LP", LP_OPTIONS))
+    guard("elastic", lambda: run_annual("elastic", setup_elastic, "QP", LP_OPTIONS))
+    guard("ramping", lambda: run_annual(
+        "ramping",
+        lambda n: apply_ramp_limits(n, "pypsa-eur/data/unit_commitment.csv"),
+        "LP", LP_OPTIONS))
+    guard("reserves", run_reserves)
+    guard("subsidy_de", lambda: run_annual("subsidy_de", setup_subsidy, "LP", LP_OPTIONS))
+    guard("rolling", lambda: run_rolling("rolling", with_forecast=False))
+    guard("forecast", lambda: run_rolling("forecast", with_forecast=True))
+    guard("uc", lambda: run_annual("uc", setup_uc, "MIP", MIP_OPTIONS))
 
 
 if __name__ == "__main__":

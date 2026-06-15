@@ -273,6 +273,10 @@ def add_operational_reserve_margin(
             "applying the reserve margin."
         )
 
+    # The generator dimension is named after the pandas index name, which
+    # is "name" in PyPSA >=1.0 and "Generator" in older releases. Derive
+    # it from the model rather than hard-coding (PyPSA-Eur's own reference
+    # still hard-codes "Generator" and breaks under PyPSA 1.x).
     n.model.add_variables(
         0.0,
         np.inf,
@@ -280,7 +284,8 @@ def add_operational_reserve_margin(
         name="Generator-r",
     )
     reserve = n.model["Generator-r"]
-    summed_reserve = reserve.sum("Generator")
+    gen_dim = next(d for d in reserve.dims if d != "snapshot")
+    summed_reserve = reserve.sum(gen_dim)
 
     # Total demand per snapshot
     demand = n.loads_t.p_set.reindex(sns).sum(axis=1)
@@ -303,7 +308,7 @@ def add_operational_reserve_margin(
     p_max_pu_full = p_max_pu.reindex(sns).fillna(method="ffill").fillna(1.0)
     rhs_capacity = xr.DataArray(
         (p_max_pu_full * p_nom_full).to_numpy(),
-        coords={"snapshot": sns, "Generator": gen_i},
+        coords={"snapshot": sns, gen_dim: gen_i},
     )
     p_var = n.model["Generator-p"]
     n.model.add_constraints(
