@@ -244,15 +244,20 @@ def main() -> None:
         n_comm = apply_unit_commitment_csv(n, "pypsa-eur/data/unit_commitment.csv")
         print(f"  committable generators: {n_comm}", flush=True)
 
+    # VOLL load shedding is the feasibility floor: without it the windowed
+    # and reserve/UC steps go infeasible at scarcity hours. So every config
+    # is baseline + VOLL + one constraint, measured on the same base; each
+    # constraint's isolated cost is its config time minus the VOLL config.
+    def setup_ramping(n):
+        apply_voll_load_shedding(n, voll_eur_per_mwh=VOLL_EUR_PER_MWH)
+        apply_ramp_limits(n, "pypsa-eur/data/unit_commitment.csv")
+
     guard("voll", lambda: run_annual(
         "voll",
         lambda n: apply_voll_load_shedding(n, voll_eur_per_mwh=VOLL_EUR_PER_MWH),
         "LP", LP_OPTIONS))
     guard("elastic", lambda: run_annual("elastic", setup_elastic, "QP", LP_OPTIONS))
-    guard("ramping", lambda: run_annual(
-        "ramping",
-        lambda n: apply_ramp_limits(n, "pypsa-eur/data/unit_commitment.csv"),
-        "LP", LP_OPTIONS))
+    guard("ramping", lambda: run_annual("ramping", setup_ramping, "LP", LP_OPTIONS))
     guard("reserves", run_reserves)
     guard("subsidy_de", lambda: run_annual("subsidy_de", setup_subsidy, "LP", LP_OPTIONS))
     guard("rolling", lambda: run_rolling("rolling", with_forecast=False))
