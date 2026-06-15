@@ -136,6 +136,7 @@ def solve_rolling_horizon(
     horizon: int = 24,
     ratios: dict[str, pd.DataFrame] | None = None,
     soc_target: pd.DataFrame | None = None,
+    extra_functionality=None,
     solver_name: str = "gurobi",
     solver_options: dict | None = None,
     log_every: int = 50,
@@ -208,21 +209,24 @@ def solve_rolling_horizon(
                         orig_p_set.loc[w, l] * ratios["load"].loc[w, zone]
                     )
 
-        status, condition = n.optimize(
+        opt_kwargs = dict(
             snapshots=w,
             solver_name=solver_name,
             solver_options=solver_options or {},
         )
+        if extra_functionality is not None:
+            opt_kwargs["extra_functionality"] = extra_functionality
+        status, condition = n.optimize(**opt_kwargs)
         if condition != "optimal":
             # Barrier without crossover often returns "suboptimal" on the
             # small window LPs; dual simplex is exact and fast at this
-            # size. Retry once.
+            # size. Retry once. (For MIP windows this only changes the
+            # root-LP method; integrality is preserved.)
             retry = dict(solver_options or {})
             retry.pop("Crossover", None)
             retry["Method"] = 1
-            status, condition = n.optimize(
-                snapshots=w, solver_name=solver_name, solver_options=retry
-            )
+            opt_kwargs["solver_options"] = retry
+            status, condition = n.optimize(**opt_kwargs)
         records.append(
             {"window": w_i, "start": w[0], "status": status, "condition": condition}
         )

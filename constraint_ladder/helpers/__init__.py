@@ -20,6 +20,7 @@ from .native_constraints import (
     restore_ramping,
 )
 from .rolling_horizon import build_forecast_ratios, solve_rolling_horizon
+from .validation import validate_run, write_report
 from .vre_anchoring import anchor_vre_generation
 
 __all__ = [
@@ -36,4 +37,6 @@ __all__ = [
     "reset_to_lp_baseline",
     "restore_ramping",
     "solve_rolling_horizon",
+    "validate_run",
+    "write_report",
 ]
