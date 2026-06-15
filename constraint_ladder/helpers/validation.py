@@ -112,9 +112,18 @@ def validate_run(
         )
 
     # --- 2. dispatch plausibility vs Ember ---
+    # Annualise the modelled mix when the run covers only part of the year
+    # (smoke tests), so the comparison to the annual Ember benchmark is
+    # meaningful. For a full year the factor is 1.0.
+    year_fraction = float(n.snapshot_weightings.generators.sum()) / 8760.0
     bench = pd.read_csv(ember_csv)
     bench = bench.set_index(["country", "carrier_group"])["twh"]
     mix = _generation_mix_twh(n)
+    if year_fraction < 0.99:
+        mix = mix / year_fraction
+        report["checks"].setdefault("notes", []).append(
+            f"generation annualised from {year_fraction:.3f} of the year (partial-horizon run)"
+        )
     mix_flags = []
     rows = []
     for (cc, grp), obs in bench.items():
