@@ -83,12 +83,12 @@ VOLL_EUR_PER_MWH = 8000.0
 # case study (see runs/profiling.py 'subsidy_de'), not pooled across the
 # 41 validated zones.
 STEPS = [
-    "00_baseline", "01_voll", "02_elastic", "03_ramping", "04_reserves",
+    "00_baseline", "01_voll", "02_elastic", "03_reserves", "04_ramping",
     "05_rolling", "06_uc",
 ]
 IDX = {name: i for i, name in enumerate(STEPS)}
 ROLLING_FROM = IDX["05_rolling"]
-RESERVES_FROM = IDX["04_reserves"]
+RESERVES_FROM = IDX["03_reserves"]
 UC_FROM = IDX["06_uc"]
 
 
@@ -115,7 +115,7 @@ def build_cumulative(weeks: int | None, target: int) -> pypsa.Network:
     if target >= IDX["02_elastic"]:
         prices, loads = zone_calibration(n)
         apply_price_elastic_demand(n, prices, loads)
-    if target >= IDX["03_ramping"]:
+    if target >= IDX["04_ramping"]:
         apply_ramp_limits(n, UC_CSV)
     if target >= UC_FROM:
         n_comm = apply_unit_commitment_csv(n, UC_CSV)
